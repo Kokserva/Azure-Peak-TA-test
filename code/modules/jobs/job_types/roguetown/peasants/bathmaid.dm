@@ -28,7 +28,8 @@
 	job_subclasses = list(
 		/datum/advclass/nightmaiden,
 		/datum/advclass/nightmaiden/concubine,
-		/datum/advclass/nightmaiden/courtesan
+		/datum/advclass/nightmaiden/courtesan,
+		/datum/advclass/nightmaiden/bouncer
 	)
 
 /datum/outfit/job/roguetown/nightmaiden
@@ -261,3 +262,72 @@
 /obj/item/bath/soap/ComponentInitialize()
 	. = ..()
 	AddComponent(/datum/component/slippery, 80)
+
+/datum/advclass/nightmaiden/bouncer
+	name = "Bouncer"
+	tutorial = "You may never have been the smartest person in town, but you were probably the sturdiest. That was enough to get you noticed by the bathhouse matron. Now you're a bouncer, and few can argue with you and your boss."
+	allowed_sexes = list(MALE, FEMALE)
+	allowed_races = RACES_ALL_KINDS
+	outfit = /datum/outfit/job/roguetown/nightmaiden/bouncer
+	traits_applied = list(TRAIT_HOMESTEAD_EXPERT, TRAIT_NUTCRACKER)
+	cmode_music = 'sound/music/cmode/towner/combat_towner.ogg'
+	category_tags = list(CTAG_NIGHTMAIDEN)
+	subclass_languages = list(/datum/language/thievescant)
+	subclass_stats = list(
+		STATKEY_CON = 2,
+		STATKEY_STR = 2,
+		STATKEY_WIL = 1,
+		STATKEY_INT = -1,
+		STATKEY_SPD = -1
+	)
+	maximum_possible_slots = 1
+	subclass_skills = list(
+		/datum/skill/combat/wrestling = SKILL_LEVEL_JOURNEYMAN,
+		/datum/skill/combat/unarmed = SKILL_LEVEL_JOURNEYMAN,
+		/datum/skill/combat/knives = SKILL_LEVEL_APPRENTICE,
+		/datum/skill/combat/maces = SKILL_LEVEL_APPRENTICE,
+		/datum/skill/combat/whipsflails = SKILL_LEVEL_APPRENTICE,
+		/datum/skill/craft/cooking = SKILL_LEVEL_NOVICE,
+		/datum/skill/misc/athletics = SKILL_LEVEL_JOURNEYMAN,
+		/datum/skill/misc/swimming = SKILL_LEVEL_JOURNEYMAN,
+		/datum/skill/misc/climbing = SKILL_LEVEL_JOURNEYMAN, 
+		/datum/skill/misc/sneaking = SKILL_LEVEL_APPRENTICE,
+		/datum/skill/misc/stealing = SKILL_LEVEL_APPRENTICE,
+		/datum/skill/misc/reading = SKILL_LEVEL_NOVICE,
+		/datum/skill/misc/medicine = SKILL_LEVEL_APPRENTICE,
+	)
+
+/datum/outfit/job/roguetown/nightmaiden/bouncer/pre_equip(mob/living/carbon/human/H)
+	..()
+	if(H.mind)
+		var/weapons = list("Knuckles","Cudgel","Dagger","Whip")
+		var/weapon_choice = input(H, "Choose your weapon.", "TAKE UP ARMS") as anything in weapons
+		H.set_blindness(0)
+		switch(weapon_choice)
+			if("Knuckles")
+				H.adjust_skillrank_up_to(/datum/skill/combat/unarmed, SKILL_LEVEL_EXPERT, TRUE)
+				beltr = /obj/item/rogueweapon/knuckles/bronzeknuckles
+				beltl = /obj/item/rogueweapon/knuckles/bronzeknuckles
+			if("Cudgel")
+				beltl = /obj/item/rogueweapon/mace/cudgel
+				H.adjust_skillrank_up_to(/datum/skill/combat/maces, SKILL_LEVEL_EXPERT, TRUE)
+			if("Dagger")
+				H.adjust_skillrank_up_to(/datum/skill/combat/knives, SKILL_LEVEL_EXPERT, TRUE)
+				beltr = /obj/item/rogueweapon/scabbard/sheath
+				r_hand = /obj/item/rogueweapon/huntingknife/idagger/steel
+				beltl = /obj/item/rogueweapon/scabbard/sheath
+				l_hand = /obj/item/rogueweapon/huntingknife/idagger/steel
+			if("Whip")
+				H.adjust_skillrank_up_to(/datum/skill/combat/whipsflails, SKILL_LEVEL_EXPERT, TRUE)
+				beltl = /obj/item/rogueweapon/whip
+	head = /obj/item/clothing/head/roguetown/roguehood/black 
+	belt = /obj/item/storage/belt/rogue/leather/black 
+	shirt = /obj/item/clothing/suit/roguetown/shirt/tunic/black
+	pants = /obj/item/clothing/under/roguetown/trou/leather
+	shoes = /obj/item/clothing/shoes/roguetown/boots/leather/reinforced
+	backr = /obj/item/storage/backpack/rogue/satchel
+	wrists = /obj/item/clothing/wrists/roguetown/bracers/leather
+	gloves = /obj/item/clothing/gloves/roguetown/fingerless
+	neck = /obj/item/storage/belt/rogue/pouch/coins/poor
+	cloak = /obj/item/clothing/suit/roguetown/armor/longcoat
+	armor = /obj/item/clothing/suit/roguetown/armor/leather/heavy/coat
