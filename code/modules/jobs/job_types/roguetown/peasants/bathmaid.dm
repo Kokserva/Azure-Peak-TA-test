@@ -276,9 +276,8 @@
 	subclass_stats = list(
 		STATKEY_CON = 2,
 		STATKEY_STR = 2,
-		STATKEY_WIL = 1,
-		STATKEY_INT = -1,
-		STATKEY_SPD = -1
+		STATKEY_WIL = 2,
+		STATKEY_INT = -1
 	)
 	maximum_possible_slots = 1
 	subclass_skills = list(
@@ -306,7 +305,7 @@
 		switch(weapon_choice)
 			if("Knuckles")
 				H.adjust_skillrank_up_to(/datum/skill/combat/unarmed, SKILL_LEVEL_EXPERT, TRUE)
-				beltr = /obj/item/rogueweapon/knuckles/bronzeknuckles
+				H.adjust_skillrank_up_to(/datum/skill/combat/wrestling, SKILL_LEVEL_EXPERT, TRUE)
 				beltl = /obj/item/rogueweapon/knuckles/bronzeknuckles
 			if("Cudgel")
 				beltl = /obj/item/rogueweapon/mace/cudgel
