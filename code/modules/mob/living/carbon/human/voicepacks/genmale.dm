@@ -132,6 +132,8 @@
 				used = list('sound/vo/mobs/cat/roar1.ogg', 'sound/vo/mobs/cat/roar2.ogg', 'sound/vo/mobs/cat/roar3.ogg', 'sound/vo/mobs/cat/roar4.ogg')
 			if("howl")
 				used = list('sound/vo/mobs/wwolf/ehowl1.ogg', 'sound/vo/mobs/wwolf/ehowl2.ogg', 'sound/vo/mobs/wwolf/ehowl3.ogg', 'sound/vo/mobs/wwolf/ehowl4.ogg', 'sound/vo/mobs/wwolf/ehowl5.ogg')
+			if("prbt")
+				used = list('sound/vo/mobs/shark/prbt.ogg')
 			if("trill")
 				used = list('sound/vo/mobs/cat/trill.ogg')
 			if("purr")
@@ -150,6 +152,8 @@
 				used = 'sound/vo/male/gen/strain.ogg'
 			if("yip")
 				used = list('sound/vo/yip.ogg', 'sound/vo/yip2.ogg', 'sound/vo/yip3.ogg')
+			if("oink")
+				used = list('modular/Creechers/sound/pig1.ogg', 'modular/Creechers/sound/pig2.ogg')
 			if("sexmoanlight")
 				used = list('sound/vo/male/gen/moan (1).ogg','sound/vo/male/gen/moan (2).ogg','sound/vo/male/gen/moan (3).ogg')
 			if("sexmoanhvy")

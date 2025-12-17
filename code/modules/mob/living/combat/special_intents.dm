@@ -312,9 +312,9 @@ This allows the devs to draw whatever shape they want at the cost of it feeling 
 	if(ishuman(target))
 		var/mob/living/carbon/human/HT = target
 		var/obj/item/bodypart/affecting = HT.get_bodypart(zone)
-		var/armor_block = HT.run_armor_check(zone, d_type, 0, damage = dam, used_weapon = W, armor_penetration = 0)
-		if(no_pen)
-			armor_block = 100
+		var/armor_block = HT.run_armor_check(zone, d_type, 0, damage = dam, used_weapon = W, armor_penetration = (no_pen ? -999 : 0))
+		if(no_pen && armor_block)
+			armor_block = 999
 		if(HT.apply_damage(dam, W.damtype, affecting, armor_block))
 			affecting.bodypart_attacked_by(bclass, dam, howner, armor = armor_block, crit_message = TRUE, weapon = W)
 			msg += "<b> It pierces through to their flesh!</b>"
@@ -422,10 +422,11 @@ SPECIALS START HERE
 
 /datum/special_intent/side_sweep/apply_hit(turf/T)
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		L.apply_status_effect(/datum/status_effect/debuff/exposed, eff_dur)
-		if(L.mobility_flags & MOBILITY_STAND)
-			var/obj/item/rogueweapon/W = iparent
-			apply_generic_weapon_damage(L, dam, W.d_type, t_zone, bclass = BCLASS_CUT)
+		if(L != howner)
+			L.apply_status_effect(/datum/status_effect/debuff/exposed, eff_dur)
+			if(L.mobility_flags & MOBILITY_STAND)
+				var/obj/item/rogueweapon/W = iparent
+				apply_generic_weapon_damage(L, dam, W.d_type, t_zone, bclass = BCLASS_CUT)
 	..()
 
 /datum/special_intent/shin_swipe
@@ -435,8 +436,9 @@ SPECIALS START HERE
 	post_icon_state = "sweep_fx"
 	pre_icon_state = "trap"
 	sfx_post_delay = 'sound/combat/shin_swipe.ogg'
-	delay = 0.7 SECONDS
-	cooldown = 15 SECONDS
+	delay = 0.5 SECONDS
+	cooldown = 20 SECONDS
+	stamcost = 15
 	var/eff_dur = 5	//We do NOT want to use SECONDS macro here.
 	var/dam
 
@@ -448,9 +450,11 @@ SPECIALS START HERE
 
 /datum/special_intent/shin_swipe/apply_hit(turf/T)	//This is applied PER tile, so we don't need to do a big check.
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		L.Slowdown(eff_dur)
-		if(L.mobility_flags & MOBILITY_STAND)
-			apply_generic_weapon_damage(L, dam, "stab", pick(BODY_ZONE_L_LEG, BODY_ZONE_R_LEG), bclass = BCLASS_CUT)
+		if(L != howner)
+			L.Slowdown(eff_dur)
+			L.apply_status_effect(/datum/status_effect/debuff/hobbled)	//-2 SPD for 8 seconds
+			if(L.mobility_flags & MOBILITY_STAND)
+				apply_generic_weapon_damage(L, dam, "stab", pick(BODY_ZONE_L_LEG, BODY_ZONE_R_LEG), bclass = BCLASS_CUT)
 	..()
 
 //Hard to hit, freezes you in place. Offbalances & slows the targets hit. If they're already offbalanced they get knocked down.
@@ -460,39 +464,41 @@ SPECIALS START HERE
 	tile_coordinates = list(list(0,0), list(0,1, 0.1 SECONDS), list(0,2, 0.2 SECONDS))
 	post_icon_state = "kick_fx"
 	pre_icon_state = "trap"
-	use_doafter = TRUE
-	respect_adjacency = FALSE
+	respect_adjacency = TRUE
 	delay = 0.7 SECONDS
-	cooldown = 20 SECONDS
+	cooldown = 25 SECONDS
+	stamcost = 25
 	var/slow_dur = 5	//We do NOT want to use SECONDS macro here. Slowdown() takes in an int and turns it into seconds already.
 	var/KD_dur = 2 SECONDS
 	var/Offb_dur = 5 SECONDS
-	var/Offbself_dur = 1.5 SECONDS
-	var/dam = 80
+	var/self_immob_dur = 1.1 SECONDS
+	var/dam = 200
 
 //We play the pre-sfx here because it otherwise it gets played per tile. Sounds funky.
 /datum/special_intent/ground_smash/on_create()
 	. = ..()
-	howner.OffBalance(Offbself_dur)
+	howner.Immobilize(self_immob_dur)
 	playsound(howner, 'sound/combat/ground_smash_start.ogg', 100, TRUE)
 
 /datum/special_intent/ground_smash/apply_hit(turf/T)
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		//We fling the target sideways from the attacker
-		var/targetdir = get_dir(L, howner)
-		var/throwdir = turn(targetdir, prob(50) ? 90 : 270)
-		var/dist = rand(1, 3)
-		var/turf/current_turf = get_turf(L)
-		var/turf/target_turf = get_ranged_target_turf(current_turf, throwdir, dist)
-		L.safe_throw_at(target_turf, dist, 1, howner, force = MOVE_FORCE_EXTREMELY_STRONG)
-		//We slow them down
-		L.Slowdown(slow_dur)
-		//We offbalance them OR knock them down if they're already offbalanced
-		if(L.IsOffBalanced())
-			L.Knockdown(KD_dur)
-		else
-			L.OffBalance(Offb_dur)
-		apply_generic_weapon_damage(L, dam, "blunt", BODY_ZONE_CHEST, bclass = BCLASS_BLUNT, no_pen = TRUE)
+		if(L != howner)
+			//We fling the target sideways from the attacker
+			var/targetdir = get_dir(L, howner)
+			var/throwdir = turn(targetdir, prob(50) ? 90 : 270)
+			var/dist = rand(1, 3)
+			var/turf/current_turf = get_turf(L)
+			var/turf/target_turf = get_ranged_target_turf(current_turf, throwdir, dist)
+			L.safe_throw_at(target_turf, dist, 1, howner, force = MOVE_FORCE_EXTREMELY_STRONG)
+			//We slow them down
+			L.Slowdown(slow_dur)
+			L.apply_status_effect(/datum/status_effect/debuff/exposed, 2.5 SECONDS)
+			//We offbalance them OR knock them down if they're already offbalanced
+			if(L.IsOffBalanced())
+				L.Knockdown(KD_dur)
+			else
+				L.OffBalance(Offb_dur)
+			apply_generic_weapon_damage(L, dam, "blunt", BODY_ZONE_CHEST, bclass = BCLASS_BLUNT, no_pen = TRUE)
 	var/sfx = pick('sound/combat/ground_smash1.ogg','sound/combat/ground_smash2.ogg','sound/combat/ground_smash3.ogg')
 	playsound(T, sfx, 100, TRUE)
 	..()
@@ -507,7 +513,7 @@ SPECIALS START HERE
 	sfx_pre_delay = 'sound/combat/flail_sweep.ogg'
 	use_doafter = TRUE
 	respect_adjacency = FALSE
-	delay = 0.8 SECONDS
+	delay = 0.7 SECONDS
 	cooldown = 25 SECONDS
 	var/victim_count = 0
 	var/slow_init = 2
@@ -523,10 +529,11 @@ SPECIALS START HERE
 
 /datum/special_intent/flail_sweep/apply_hit(turf/T)
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		if(L.mobility_flags & MOBILITY_STAND)
-			victim_count++
-			addtimer(CALLBACK(src, PROC_REF(apply_effect), L), 0.1 SECONDS)	//We need to count them all up first so this is an unfortunate (& janky) requirement.
-	..()																//An alternative could be a spatial grid count from howner called once.
+		if(L != howner)
+			if(L.mobility_flags & MOBILITY_STAND)
+				victim_count++
+				addtimer(CALLBACK(src, PROC_REF(apply_effect), L), 0.1 SECONDS)	//We need to count them all up first so this is an unfortunate (& janky) requirement.
+	..()																		//An alternative could be a spatial grid count from howner called once.
 
 ///This will apply the actual effect, as we need some way to count all the mobs in the zone first.
 /datum/special_intent/flail_sweep/proc/apply_effect(mob/living/victim)
@@ -573,10 +580,11 @@ SPECIALS START HERE
 	pre_icon_state = "trap"
 	use_doafter = TRUE
 	respect_adjacency = FALSE
-	delay = 0.6 SECONDS
+	delay = 0.5 SECONDS
 	cooldown = 25 SECONDS
-	var/immob_dur = 3 SECONDS
-	var/exposed_dur = 5 SECONDS
+	stamcost = 15
+	var/immob_dur = 3.5 SECONDS
+	var/exposed_dur = 6 SECONDS
 	var/dam
 
 /datum/special_intent/axe_swing/_reset()
@@ -585,7 +593,7 @@ SPECIALS START HERE
 /datum/special_intent/axe_swing/process_attack()
 	tile_coordinates = list()
 	var/obj/item/rogueweapon/W = iparent
-	dam = W.force_dynamic * (howner.STASTR / 10)
+	dam = (W.force_dynamic * (howner.STASTR / 10)) + 50
 	if(howner.used_hand == 1)	//We mirror it if it's the left arm.
 		tile_coordinates += AXE_SWING_GRID_MIRROR
 	else
@@ -599,10 +607,11 @@ SPECIALS START HERE
 
 /datum/special_intent/axe_swing/apply_hit(turf/T)
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		L.apply_status_effect(/datum/status_effect/debuff/exposed, exposed_dur)
-		L.Immobilize(immob_dur)
-		if(L.mobility_flags & MOBILITY_STAND)
-			apply_generic_weapon_damage(L, dam, "slash", pick(BODY_ZONE_L_LEG, BODY_ZONE_R_LEG), bclass = BCLASS_CHOP)
+		if(L != howner)
+			L.apply_status_effect(/datum/status_effect/debuff/exposed, exposed_dur)
+			L.Immobilize(immob_dur)
+			if(L.mobility_flags & MOBILITY_STAND)
+				apply_generic_weapon_damage(L, dam, "slash", pick(BODY_ZONE_L_LEG, BODY_ZONE_R_LEG), bclass = BCLASS_CHOP)
 	var/sfx = pick('sound/combat/sp_axe_swing1.ogg','sound/combat/sp_axe_swing2.ogg','sound/combat/sp_axe_swing3.ogg')
 	playsound(T, sfx, 100, TRUE)
 	..()
@@ -629,16 +638,17 @@ SPECIALS START HERE
 /datum/special_intent/whip_coil/apply_hit(turf/T)
 	var/whiffed = TRUE
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		L.Immobilize(immob_dur)
-		apply_generic_weapon_damage(L, dam, "slash", pick(BODY_ZONE_PRECISE_L_FOOT, BODY_ZONE_PRECISE_R_FOOT), bclass = BCLASS_LASHING)
-		whiffed = FALSE
+		if(L != howner)
+			L.Immobilize(immob_dur)
+			apply_generic_weapon_damage(L, dam, "slash", pick(BODY_ZONE_PRECISE_L_FOOT, BODY_ZONE_PRECISE_R_FOOT), bclass = BCLASS_LASHING)
+			whiffed = FALSE
 	if(!whiffed)
 		playsound(T, 'sound/combat/sp_whip_hit.ogg', 100, TRUE)
 	else
 		playsound(T, 'sound/combat/sp_whip_whiff.ogg', 100, TRUE)
 	..()
 
-#define GAREN_WAVE1 1 SECONDS
+#define GAREN_WAVE1 0.7 SECONDS
 #define GAREN_WAVE2 1.4 SECONDS
 
 /datum/special_intent/greatsword_swing
@@ -646,23 +656,24 @@ SPECIALS START HERE
 	desc = "Swing your greatsword all around you in a ring of Judgement."
 	tile_coordinates = list(
 		list(0,0), list(1,0), list(1,-1),list(1,-2),list(0,-2),list(-1,-2),list(-1,-1),list(-1,0),\
-		list(0,0, GAREN_WAVE1), list(1,0, GAREN_WAVE1), list(1,-1, GAREN_WAVE1),list(1,-2, GAREN_WAVE1),list(0,-2, GAREN_WAVE1),list(-1,-2, GAREN_WAVE1),list(-1,-1, GAREN_WAVE1),list(-1,0, GAREN_WAVE1),\
+		list(0,1, GAREN_WAVE1), list(1,1, GAREN_WAVE1), list(-1,1, GAREN_WAVE1),list(1,-3, GAREN_WAVE1),list(0,-3, GAREN_WAVE1),list(-1,-3, GAREN_WAVE1),list(-2,0, GAREN_WAVE1),list(-2,-1, GAREN_WAVE1),list(-2,-2, GAREN_WAVE1),list(2,0, GAREN_WAVE1),list(2,-1, GAREN_WAVE1),list(2,-2, GAREN_WAVE1),\
 		list(0,0, GAREN_WAVE2), list(1,0, GAREN_WAVE2), list(1,-1, GAREN_WAVE2),list(1,-2, GAREN_WAVE2),list(0,-2, GAREN_WAVE2),list(-1,-2, GAREN_WAVE2),list(-1,-1, GAREN_WAVE2),list(-1,0, GAREN_WAVE2)
 		)
 	post_icon_state = "sweep_fx"
 	pre_icon_state = "fx_trap_long"
 	sfx_pre_delay = 'sound/combat/rend_hit.ogg'
 	respect_adjacency = FALSE
+	respect_dir = TRUE
 	delay = 0.7 SECONDS
 	cooldown = 30 SECONDS
 	stamcost = 25	//Stamina cost
-	var/dam = 50
+	var/dam = 60
 	var/slow_dur = 2
 	var/hitcount = 0
 	var/self_debuffed = FALSE
-	var/self_immob = 3.5 SECONDS
-	var/self_clickcd = 3.5 SECONDS
-	var/self_expose = 5 SECONDS
+	var/self_immob = 2.2 SECONDS
+	var/self_clickcd = 2.1 SECONDS
+	var/self_expose = 2.3 SECONDS
 
 /datum/special_intent/greatsword_swing/_reset()
 	hitcount = initial(hitcount)
@@ -686,11 +697,20 @@ SPECIALS START HERE
 
 /datum/special_intent/greatsword_swing/apply_hit(turf/T)
 	for(var/mob/living/L in get_hearers_in_view(0, T))
-		L.Slowdown(slow_dur)
-		if(L.mobility_flags & MOBILITY_STAND)
-			apply_generic_weapon_damage(L, ((hitcount > 1) ? (dam * 1.5) : dam), "slash", BODY_ZONE_CHEST, bclass = BCLASS_CUT)
-		var/sfx = 'sound/combat/sp_gsword_hit.ogg'
-		playsound(T, sfx, 100, TRUE)
+		if(L != howner)
+			L.Slowdown(slow_dur)
+			if(L.mobility_flags & MOBILITY_STAND)
+				var/hitdmg = dam
+				switch(hitcount)
+					if(2)
+						hitdmg *= 1.5
+					if(3)
+						hitdmg *= 2
+				apply_generic_weapon_damage(L, hitdmg, "slash", BODY_ZONE_CHEST, bclass = BCLASS_CUT)
+				if(hitcount == 3)	//Last hit deals a bit of extra damage to integrity only. Facetanking it is highly discouraged!
+					apply_generic_weapon_damage(L, (dam * 0.8), "slash", BODY_ZONE_CHEST, bclass = BCLASS_CUT, no_pen = TRUE)
+			var/sfx = 'sound/combat/sp_gsword_hit.ogg'
+			playsound(T, sfx, 100, TRUE)
 	..()
 
 #undef GAREN_WAVE1

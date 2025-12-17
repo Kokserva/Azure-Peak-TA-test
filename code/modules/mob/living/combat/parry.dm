@@ -146,6 +146,10 @@
 			text += " Twice! Disadvantage! ([(prob2defend / 100) * (prob2defend / 100) * 100]%)"
 		to_chat(src, span_info("[text]"))
 
+
+	if(HAS_TRAIT(src, TRAIT_NODEF))
+		prob2defend = 0
+
 	var/parry_status = FALSE
 	if(defender_dualw)
 		if(prob(prob2defend) && extradefroll)
@@ -277,7 +281,7 @@
 
 			var/def_verb = "parries"
 			if(istype(rmb_intent, /datum/rmb_intent/riposte))
-				def_verb = "ripostes"
+				def_verb = "[pick("expertly", "deftly")] parries"
 			var/def_msg = "<b>[src]</b> [def_verb] [user] with [W]!"
 
 			visible_message(span_combatsecondary(def_msg), span_boldwarning(def_msg), COMBAT_MESSAGE_RANGE, list(user))
