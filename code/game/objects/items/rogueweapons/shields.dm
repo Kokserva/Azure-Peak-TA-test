@@ -24,6 +24,7 @@
 	max_integrity = 100
 	anvilrepair = /datum/skill/craft/carpentry
 	COOLDOWN_DECLARE(shield_bang)
+	special = /datum/special_intent/limbguard
 
 
 /obj/item/rogueweapon/shield/attackby(obj/item/attackby_item, mob/user, params)
@@ -381,6 +382,7 @@
 	name = "heater shield"
 	desc = "A sturdy wood and leather shield. Made to not be too encumbering while still providing good protection."
 	icon_state = "heatersh"
+	slot_flags = ITEM_SLOT_HIP | ITEM_SLOT_BACK
 	force = 15
 	throwforce = 10
 	dropshrink = 0.8

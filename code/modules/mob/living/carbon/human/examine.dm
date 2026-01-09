@@ -175,7 +175,7 @@
 
 		if(name in GLOB.court_agents)
 			var/datum/job/J = SSjob.GetJob(user.mind?.assigned_role)
-			if(J?.department_flag & GARRISON || J?.department_flag & NOBLEMEN)
+			if(J?.department_flag & GARRISON || J?.department_flag & NOBLEMEN || J?.department_flag & COURTIERS || J?.department_flag & RETINUE)
 				. += span_greentext("<b>[m1] an agent of the court!</b>")
 
 		if(user != src && !HAS_TRAIT(src, TRAIT_DECEIVING_MEEKNESS))
@@ -214,6 +214,9 @@
 		var/inquisition_text = get_inquisition_text(user)
 		if(inquisition_text)
 			. +=span_notice(inquisition_text)
+		var/clergy_text = get_clergy_text(user)
+		if(clergy_text)
+			. +=span_notice(clergy_text)
 
 		if (HAS_TRAIT(src, TRAIT_LEPROSY))
 			. += span_necrosis("A LEPER...")
@@ -529,6 +532,9 @@
 		appears_dead = TRUE
 
 	var/temp = getBruteLoss() + getFireLoss() //no need to calculate each of these twice
+
+	if (get_bodypart(BODY_ZONE_HEAD)?.grievously_wounded)
+		msg += span_bloody("<b>[p_their(TRUE)] neck is a ghastly ruin of blood and bone, barely hanging on!</b>")
 
 	if(!(user == src && src.hal_screwyhud == SCREWYHUD_HEALTHY)) //fake healthy
 		// Damage
@@ -851,6 +857,11 @@
 	if((!obscure_name || client?.prefs.masked_examine) && (flavortext || headshot_link || ooc_notes))
 		. += "<a href='?src=[REF(src)];task=view_headshot;'>Examine closer</a> [showassess ? " | <a href='?src=[REF(src)];task=assess;'>Assess</a>" : ""]"
 
+	/// Rumours & Gossip
+	if(length(rumour) || length(noble_gossip))
+		if(!obscure_name || (obscure_name && client?.prefs.masked_examine) || observer_privilege)
+			. += "<a href='?src=[REF(src)];task=view_rumours_gossip;'>Recall Rumours & Gossip</a>"
+
 	if(lip_style)
 		switch(lip_color)
 			if("red")
@@ -874,11 +885,8 @@
 		app_str = "<details><summary>[span_info("Details")]</summary>"
 
 	for(var/line in lines)
-		var/index = 1
 		app_str += span_info(line)
-		index++
-		if(index != length(lines))
-			app_str += "<br>"
+		app_str += "<br>"
 	if(!(user.client?.prefs?.full_examine))
 		if(length(lines))
 			app_str += "</details>"
@@ -966,6 +974,8 @@
 // Used for Inquisition tags
 /mob/living/proc/get_inquisition_text(mob/examiner)
 	var/inquisition_text
+	if(!HAS_TRAIT(examiner, TRAIT_INQUISITION)) //If the person doing the examining doesn't have the trait, we don't need to do the other four ifs
+		return null
 	if(HAS_TRAIT(src, TRAIT_INQUISITION) && HAS_TRAIT(examiner, TRAIT_INQUISITION))
 		inquisition_text = "A fellow adherent to the Holy Otavan Inquisition's missives."
 	if(HAS_TRAIT(src, TRAIT_PURITAN) && HAS_TRAIT(examiner, TRAIT_INQUISITION))
@@ -977,6 +987,22 @@
 
 	return inquisition_text
 
+// Used for Church tags
+/mob/living/proc/get_clergy_text(mob/examiner)
+	var/clergy_text
+	if(!HAS_TRAIT(examiner, TRAIT_CLERGY)) //If the person doing the examining doesn't have the trait, we don't need to do the other four ifs
+		return null
+	if(HAS_TRAIT(src, TRAIT_CLERGY) && HAS_TRAIT(examiner, TRAIT_CLERGY))
+		clergy_text = "A fellow member of the Azurian Church of the Ten."
+	if(HAS_TRAIT(src, TRAIT_CHOSEN) && HAS_TRAIT(examiner, TRAIT_CLERGY))
+		clergy_text = "The Bishop, the leader of my Church and Chosen of the Ten."
+	if(HAS_TRAIT(src, TRAIT_CLERGY) && HAS_TRAIT(examiner, TRAIT_CHOSEN))
+		clergy_text = "A member of the clergy under my leadership, as willed by the Ten."
+	if(HAS_TRAIT(src, TRAIT_CHOSEN) && HAS_TRAIT(examiner, TRAIT_CHOSEN))
+		clergy_text = "Myself. I am the Bishop of Azuria, voice of the Ten in these lands."
+
+	return clergy_text
+
 /// Returns antagonist-related examine text for the mob, if any. Can return null.
 /mob/living/proc/get_villain_text(mob/examiner)
 	var/villain_text
@@ -986,6 +1012,8 @@
 				villain_text = span_notice("Free man!")
 			if(HAS_TRAIT(src,TRAIT_KNOWNCRIMINAL))
 				villain_text = span_userdanger("BANDIT!")
+		if(mind.special_role == "Deadite")
+			villain_text = span_userdanger("DEADITE!")
 		if(mind.special_role == "Vampire Lord")
 			var/datum/antagonist/vampire/VD = mind.has_antag_datum(/datum/antagonist/vampire)
 			if(!SEND_SIGNAL(VD.owner, COMSIG_DISGUISE_STATUS))

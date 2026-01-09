@@ -85,11 +85,6 @@
 		H = hud_used.action_intent
 	oactive = FALSE
 	update_a_intents()
-
-	if(ishuman(src))
-		var/mob/living/carbon/human/H = src
-		if(H.has_status_effect(/datum/status_effect/buff/clash))
-			H.bad_guard(span_warning("I swapped away from the weapon!"))
 	return TRUE
 
 
@@ -586,7 +581,7 @@
 
 /mob/living/carbon
 	var/nausea = 0
-	var/bleeding_tier = 0 
+	var/bleeding_tier = 0
 
 /mob/living/carbon/proc/add_nausea(amt)
 	nausea = clamp(nausea + amt, 0, 300)
@@ -953,9 +948,6 @@
 		clear_fullscreen("critvision")
 		clear_fullscreen("DD")
 		clear_fullscreen("DDZ")
-	if(hud_used)
-		if(hud_used.stressies)
-			hud_used.stressies.update_icon()
 //	if(blood_volume <= 0)
 //		overlay_fullscreen("DD", /atom/movable/screen/fullscreen/crit/death)
 //	else

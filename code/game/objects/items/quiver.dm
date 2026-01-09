@@ -1,7 +1,7 @@
 
 /obj/item/quiver
 	name = "quiver"
-	desc = ""
+	desc = "A quiver used to hold arrows. An archer's best friend."
 	icon_state = "quiver0"
 	item_state = "quiver"
 	icon = 'icons/roguetown/weapons/ammo.dmi'
@@ -81,6 +81,7 @@
 						var/mob/M = loc
 						if(HAS_TRAIT(M, TRAIT_COMBAT_AWARE))
 							M.balloon_alert(M, "[length(arrows)] left...")
+					update_icon()
 					break
 		return
 	..()
@@ -204,7 +205,7 @@
 
 /obj/item/quiver/javelin
 	name = "javelinbag"
-	desc = ""
+	desc = "A large, durable quiver used to hold javelins."
 	icon_state = "javelinbag0"
 	item_state = "javelinbag"
 	max_storage = 4
