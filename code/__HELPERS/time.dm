@@ -97,6 +97,7 @@ GLOBAL_VAR_INIT(dayspassed, FALSE)
 				GLOB.dayspassed = 1
 			SStreasury.distribute_estate_incomes()
 			SStreasury.distribute_daily_payments()
+			SStreasury.distribute_interest()
 		for(var/mob/living/player in GLOB.mob_list)
 			if(player.stat != DEAD && player.client)
 				player.do_time_change()
@@ -123,7 +124,7 @@ GLOBAL_VAR_INIT(dayspassed, FALSE)
 			if(3)
 				text_to_show = "DAWN OF THE THIRD DAE\nWEDDING'S DAE"
 			if(4)
-				text_to_show = "DAWN OF THE FOURTH DAE\nTHULE'S DAE"
+				text_to_show = "DAWN OF THE FOURTH DAE\nTOLL'S DAE"
 			if(5)
 				text_to_show = "DAWN OF THE FIFTH DAE\nFREYJA'S DAE"
 			if(6)

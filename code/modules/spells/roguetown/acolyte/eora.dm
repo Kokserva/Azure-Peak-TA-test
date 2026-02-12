@@ -376,17 +376,14 @@
 	to_chat(user, span_notice("You bless [target] with Eora's love!"))
 	return TRUE
 
-/obj/effect/proc_holder/spell/invoked/bless_food/start_recharge()
-	if(ranged_ability_user)
-		var/holy_skill = ranged_ability_user.get_skill_level(associated_skill)
-		// Reduce recharge by 6 seconds per skill level
-		var/skill_reduction = (6 SECONDS) * holy_skill
-		recharge_time = base_recharge_time - skill_reduction
-		// Ensure recharge doesn't go below 0
-		if(recharge_time < 0)
-			recharge_time = 0
-	else
-		recharge_time = base_recharge_time
+/obj/effect/proc_holder/spell/invoked/bless_food/calculate_recharge_time()
+	if(!ranged_ability_user)
+		return base_recharge_time
+		
+	var/holy_skill = ranged_ability_user.get_skill_level(associated_skill)
+	var/skill_reduction = (6 SECONDS) * holy_skill
+	
+	return max(cooldown_min, base_recharge_time - skill_reduction)
 
 /obj/effect/proc_holder/spell/invoked/pomegranate
 	name = "Amaranth Sanctuary"
@@ -457,6 +454,7 @@
 	var/happiness = 0
 	var/water_happiness = 0
 	var/fertilizer_happiness = 0
+	var/prune_happiness = 0
 	var/prune_count = 0
 	var/list/tree_offerings = list()
 	var/happiness_tier = 1
@@ -510,15 +508,20 @@
 			return TRUE
 		var/skill = get_farming_skill(user)
 		var/prune_time = get_skill_delay(skill, fastest = 0.5, slowest = 3)
+		var/branches_pruned = 1
+		var/remaining_cap = 20 - prune_happiness
 
 		to_chat(user, span_notice("You begin pruning the tree..."))
 
 		if(do_after(user, prune_time, target = src))
 			if(skill >= 3)
 				prune_count = min(4, prune_count + 2)
+				branches_pruned++
 			else
 				prune_count++
-			happiness = min(happiness + 5, 100)
+			var/actual_gain = min(branches_pruned * 5, remaining_cap)
+			prune_happiness += actual_gain
+			happiness = min(happiness + actual_gain, 100)
 			update_happiness_tier()
 			if(iscarbon(user))
 				var/mob/living/carbon/C = user
@@ -673,6 +676,7 @@
 	water_happiness = 0
 	fertilizer_happiness = 0
 	prune_count = 0
+	prune_happiness = 0
 	update_happiness_tier()
 	update_icon()
 

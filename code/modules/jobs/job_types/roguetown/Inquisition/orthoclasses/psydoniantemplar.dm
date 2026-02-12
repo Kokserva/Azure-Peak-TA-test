@@ -52,7 +52,7 @@
 	belt = /obj/item/storage/belt/rogue/leather/black
 	beltl = /obj/item/storage/belt/rogue/pouch/coins/mid
 	id = /obj/item/clothing/ring/signet/silver
-	backpack_contents = list(/obj/item/roguekey/inquisition = 1,
+	backpack_contents = list(/obj/item/roguekey/inquisitionmanor = 1,
 	/obj/item/paper/inqslip/arrival/ortho = 1)
 
 	H.dna.species.soundpack_m = new /datum/voicepack/male/knight()
@@ -88,7 +88,7 @@
 	switch(weapon_choice)
 		if("Psydonic Longsword")
 			H.put_in_hands(new /obj/item/rogueweapon/sword/long/psysword(H))
-			H.put_in_hands(new /obj/item/rogueweapon/scabbard/sword(H))
+			H.put_in_hands(new /obj/item/rogueweapon/scabbard/sword/noble(H))
 			H.adjust_skillrank_up_to(/datum/skill/combat/swords, 4, TRUE)
 		if("Psydonic War Axe")
 			H.put_in_hands(new /obj/item/rogueweapon/stoneaxe/battle/psyaxe(H))
