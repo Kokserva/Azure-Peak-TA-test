@@ -3,7 +3,6 @@
 	var/key_third_person = "" //This will also call the emote
 	var/message = "" //Message displayed when emote is used
 	var/message_mime = "" //Message displayed if the user is a mime
-	var/message_monkey = "" //Message displayed if the user is a monkey
 	var/message_simple = "" //Message to display if the user is a simple_animal
 	var/message_param = "" //Message to display if a param was given
 	var/message_muffled = null //Message to display if the user is muffled
@@ -32,6 +31,12 @@
 
 	/// Whether this emote is filtered by our "hear animal noises" preference.
 	var/is_animal = FALSE
+
+	/// If true, emote will check for detached trait and not run if the user has it and the emote wasn't intentional. Used for emotes that require emotional investment to make sense, like crying or laughing.
+	var/needs_emotion = FALSE
+
+	/// For ranged targeted emotes, range of 2 is for adjacents
+	var/targetrange = 2 
 
 	/// Whether this emote will ONLY go through a few walls on the same z-level.
 	var/is_quiet = FALSE
@@ -68,13 +73,16 @@
 	if(targetted)
 		var/list/mobsadjacent = list()
 		var/mob/chosenmob
-		for(var/mob/living/M in range(user, 2))
+		for(var/mob/living/M in range(user, targetrange))
 			if(M != user)
 				mobsadjacent += M
 		if(mobsadjacent.len)
-			chosenmob = tgui_input_list(user, "[key] who?", "XYLIX", mobsadjacent)
+			chosenmob = input("[key] who?") in mobsadjacent
 		if(chosenmob)
 			if(user.Adjacent(chosenmob))
+				params = chosenmob.name
+				adjacentaction(user, chosenmob)
+			else if(targetrange > 2) //if it's a ranged targeted emote
 				params = chosenmob.name
 				adjacentaction(user, chosenmob)
 	var/raw_msg = select_message_type(user, intentional)
@@ -129,11 +137,22 @@
 			var/static/regex/regex = regex(@"[,.!?]", "g")
 			pre_color_msg = regex.Replace(pre_color_msg, "")
 			pre_color_msg = trim(pre_color_msg, MAX_MESSAGE_LEN)
-		// Checks to see if we're emoting on the body while we have a head, or if we're emoting on the head.
+		// Build the styled name for chat
+		var/styled_name
 		if(human && human.voice_color)
-			msg = "<span style='color:#[human.voice_color];text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;'><b>[emotelocation]</b></span> " + msg
+			var/color_to_use = human.voice_color
+			if(human.voicecolor_override)
+				color_to_use = human.voicecolor_override
+			styled_name = "<span style='color:#[color_to_use];text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;'><b>[emotelocation]</b></span>"
 		else
-			msg = "<b>[emotelocation]</b> " + msg
+			styled_name = "<b>[emotelocation]</b>"
+		// If the message contains $n, substitute it with the name instead of prepending
+		if(findtext(msg, "$n"))
+			msg = trim(replacetext(msg, "$n", styled_name))
+			pre_color_msg = trim(replacetext(pre_color_msg, "$n", "[emotelocation]"))
+		else
+			msg = "[styled_name] [msg]"
+		msg = "<span class='game-emote'>[msg]</span>"
 		for(var/mob/M in GLOB.dead_mob_list)
 			if(!M.client || isnewplayer(M))
 				continue
@@ -219,6 +238,18 @@
 				H.last_sound = used_sound
 				return used_sound
 		else
+			// familiars get to do emotes with their weird planar being anatomy, so that they can caw and such
+			if(istype(user, /mob/living/simple_animal/pet/familiar))
+				var/mob/living/simple_animal/pet/familiar/fam = user
+				if(!fam.voice_pack)
+					return
+				var/possible_sounds = fam.voice_pack.get_sound(key)
+				var/used_sound
+				if(islist(possible_sounds))
+					used_sound = pick(possible_sounds)
+				else
+					used_sound = possible_sounds
+				return used_sound
 			return user.get_sound(key)
 
 /mob/living/proc/get_sound(input)
@@ -231,6 +262,8 @@
 		msg = replacetext(msg, "them", user.p_them())
 	if(findtext(msg, "%s"))
 		msg = replacetext(msg, "%s", user.p_s())
+	if(findtext(msg, "themselves"))
+		msg = replacetext(msg, "themselves", user.p_themselves())
 	return msg
 
 /datum/emote/proc/select_message_type(mob/user, intentional)
@@ -247,8 +280,6 @@
 			. = message_muffled
 	if(user.mind && user.mind.miming && message_mime)
 		. = message_mime
-	else if(ismonkey(user) && message_monkey)
-		. = message_monkey
 	else if(isanimal(user) && message_simple)
 		. = message_simple
 
@@ -286,6 +317,9 @@
 				return FALSE
 //			to_chat(user, span_warning("I cannot [key] while restrained!"))
 			return FALSE
+
+	if(needs_emotion && HAS_TRAIT(user, TRAIT_DETACHED) && !intentional)
+		return FALSE
 
 	if(intentional && HAS_TRAIT(user, TRAIT_EMOTEMUTE))
 		return FALSE

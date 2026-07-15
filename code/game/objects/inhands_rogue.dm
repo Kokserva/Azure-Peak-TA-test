@@ -32,10 +32,12 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 	if(HAS_BLOOD_DNA(src))
 		used_index += "_b"
 	var/static/list/onmob_sprites = list()
-	var/icon/onmob = onmob_sprites["[tag][behind][mirrored][used_index]"]
+	var/cache_key = "[type]|[tag]|[behind]|[mirrored]|[used_index]"
+	var/icon/onmob = onmob_sprites[cache_key]
 	if(!onmob || force_reupdate_inhand)
 		onmob = fcopy_rsc(generateonmob(tag, prop, behind, mirrored))
-		onmob_sprites["[tag][behind][mirrored][used_index]"] = onmob
+		onmob_sprites[cache_key] = onmob
+		force_reupdate_inhand = FALSE
 	return onmob
 
 /obj/item/proc/get_extra_onmob_index()
@@ -64,10 +66,14 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 	addtimer(CALLBACK(src, PROC_REF(fake_throw_at), target_turf, dist, dist, deflector), 0.1 SECONDS)
 
 /obj/item/proc/getonmobprop(tag)
+	if(current_alt_grip)
+		var/list/altgrip_prop = current_alt_grip.getonmobprop(src, tag)
+		if(altgrip_prop)
+			return altgrip_prop
 	if(tag)
 		switch(tag)
 			if("gen")
-				return list("shrink" = 0.2,"sx" = -7,"sy" = -4,"nx" = 7,"ny" = -4,"wx" = -4,"wy" = -4,"ex" = 2,"ey" = -4,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
+				return list("shrink" = 0.4,"sx" = -7,"sy" = -4,"nx" = 7,"ny" = -4,"wx" = -4,"wy" = -4,"ex" = 2,"ey" = -4,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
 			if("wielded")
 				return null
 			if("altgrip")
@@ -103,10 +109,13 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 	// --- behind handling + icon_states cache ---
 	if(behind)
 		var/icon_key = "[icon]"
+		var/state_key = "[icon]_[icon_state]"
 		if(!GLOB.IconStates_cache[icon_key])
-			var/list/istates = icon_states(icon)
-			GLOB.IconStates_cache[icon_key] = istates
-			GLOB.has_behind_cache[icon_key] = ("[icon_state]_behind" in istates)
+			GLOB.IconStates_cache[icon_key] = icon_states(icon)
+
+		if(isnull(GLOB.has_behind_cache[state_key]))
+			var/list/istates = GLOB.IconStates_cache[icon_key]
+			GLOB.has_behind_cache[state_key] = ("[icon_state]_behind" in istates)
 
 		if(GLOB.has_behind_cache[icon_key])
 			blended = icon(icon = icon, icon_state = "[icon_state]_behind")
@@ -807,7 +816,7 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 	LI.update_inv_back()
 
 /client/verb/give_me_money()
-	set category = "DEBUGTEST"
+	set category = "Debug.Test"
 	set name = "GiveMeMoney"
 	if(mob)
 		var/turf/T = get_turf(mob)
@@ -815,7 +824,7 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 			new /obj/item/coin/gold/pile(T)
 /*
 /client/verb/wwolf()
-	set category = "DEBUGTEST"
+	set category = "Debug.Test"
 	set name = "Werewolf"
 	if(mob.mind)
 		if(mob.mind.has_antag_datum(/datum/antagonist/werewolf, TRUE))
@@ -826,7 +835,7 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 */
 
 /client/verb/zoomtest()
-	set category = "DEBUGTEST"
+	set category = "Debug.Test"
 	set name = "ZoomTest"
 	if(mob)
 		if(iscarbon(mob))
@@ -840,7 +849,7 @@ GLOBAL_LIST_INIT(has_behind_cache, list()) // cheaty hack to avoid repeated list
 				animate(transform = -newmatrix, time = 5, easing = QUAD_EASING)
 
 /client/verb/zoomteststop()
-	set category = "DEBUGTEST"
+	set category = "Debug.Test"
 	set name = "ZoomTestEnd"
 	if(mob)
 		if(iscarbon(mob))

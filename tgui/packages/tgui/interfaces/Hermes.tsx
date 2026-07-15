@@ -16,19 +16,41 @@ type Data = {
   paper_cost: number;
   quill_cost: number;
   letter_cost: number;
+  free_send_ready: 0 | 1;
+  free_send_remaining_ds: number;
+  has_tube?: boolean;
+};
+
+const dsToClock = (ds: number) => {
+  if (ds <= 0) return '0s';
+  const totalSeconds = Math.ceil(ds / 10);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes <= 0) return `${seconds}s`;
+  return `${minutes}m ${seconds}s`;
 };
 
 export const Hermes = (props: any, context: any) => {
   const { act, data } = useBackend<Data>();
-  const { balance, paper_cost, quill_cost, letter_cost } = data;
+  const {
+    balance,
+    paper_cost,
+    quill_cost,
+    letter_cost,
+    free_send_ready,
+    free_send_remaining_ds,
+    has_tube,
+  } = data;
 
   const [recipient, setRecipient] = useState('');
   const [sender, setSender] = useState('');
   const [letterContent, setLetterContent] = useState('');
 
-  const canSendLetter = balance >= letter_cost && recipient.length > 0;
+  const isFree = !!free_send_ready;
+  const canSendLetter = recipient.length > 0 && (isFree || balance >= letter_cost);
   const canBuyPaper = balance >= paper_cost;
   const canBuyQuill = balance >= quill_cost;
+  const canSendTube = letterContent.length > 0;
 
   return (
     <Window title="HERMES" width={400} height={480}>
@@ -81,7 +103,11 @@ export const Hermes = (props: any, context: any) => {
 
           <Stack.Item grow>
             <Section
-              title={`Write Letter (${letter_cost} mammon)`}
+              title={
+                isFree
+                  ? 'Write Letter (free letter ready)'
+                  : `Write Letter (${letter_cost} mammon, next free in ${dsToClock(free_send_remaining_ds)})`
+              }
               fill
             >
               <Stack vertical fill>
@@ -116,20 +142,43 @@ export const Hermes = (props: any, context: any) => {
                   />
                 </Stack.Item>
                 <Stack.Item>
-                  <Button
-                    fluid
-                    icon="paper-plane"
-                    disabled={!canSendLetter}
-                    onClick={() =>
-                      act('send_letter', {
-                        recipient: recipient,
-                        sender: sender || 'Anonymous',
-                        content: letterContent,
-                      })
-                    }
-                  >
-                    Send Letter
-                  </Button>
+                  <Stack>
+                    <Stack.Item grow>
+                      <Button
+                        fluid
+                        icon="paper-plane"
+                        color={isFree ? 'good' : undefined}
+                        disabled={!canSendLetter}
+                        onClick={() =>
+                          act('send_letter', {
+                            recipient: recipient,
+                            sender: sender || 'Anonymous',
+                            content: letterContent,
+                          })
+                        }
+                      >
+                        {isFree ? 'Send Letter (Free)' : 'Send Letter'}
+                      </Button>
+                    </Stack.Item>
+                    {has_tube && (
+                      <Stack.Item grow>
+                        <Button
+                          fluid
+                          icon="paper-plane"
+                          color="teal"
+                          disabled={!canSendTube}
+                          onClick={() =>
+                            act('send_tube', {
+                              sender: sender || 'Anonymous',
+                              content: letterContent,
+                            })
+                          }
+                        >
+                          Send Through Tube (Free)
+                        </Button>
+                      </Stack.Item>
+                    )}
+                  </Stack>
                 </Stack.Item>
               </Stack>
             </Section>

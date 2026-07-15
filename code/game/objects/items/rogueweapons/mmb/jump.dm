@@ -47,6 +47,10 @@
 			to_chat(src, span_warning("That's too high for me..."))
 			return FALSE
 
+	if(has_status_effect(/datum/status_effect/debuff/exposed))
+		to_chat(src, span_warning("I'm exposed and lost my footing! I can't jump!"))
+		return FALSE
+
 	SEND_SIGNAL(src, COMSIG_LIVING_ONJUMP, A)
 
 	changeNext_move(mmb_intent.clickcd)
@@ -79,6 +83,7 @@
 		if(!H.check_armor_skill() || H.legcuffed)
 			jadded += 50
 			jrange = 1
+			to_chat(H, span_warning("My armor is too heavy to jump effectively!"))
 
 	jump_action_resolve(A, jadded, jrange, jextra, jroot)
 	return TRUE
@@ -121,6 +126,8 @@
 		is_jumping = FALSE
 		if(jroot && !HAS_TRAIT(src, TRAIT_ZJUMP))	//Jesters and werewolves don't get immobilized at all
 			Immobilize((HAS_TRAIT(src, TRAIT_LEAPER) ? 5 : 10))	//Acrobatics get half the time
+			if(HAS_TRAIT(src, TRAIT_DEADITE)) //Non-Jester deadites collapse and fall over on landing, you're literally rotting apart.
+				Knockdown(10)
 		if(isopenturf(src.loc))
 			var/turf/open/T = src.loc
 			if(T.landsound)

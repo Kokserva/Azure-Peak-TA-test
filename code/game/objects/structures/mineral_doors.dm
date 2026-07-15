@@ -55,6 +55,7 @@
 	/// Whether to grant a resident_key
 	var/grant_resident_key = FALSE
 	var/resident_key_amount = 1
+	var/require_noble_trait = FALSE
 	/// The type of a key the resident will get
 	var/resident_key_type
 	/// The required role of the resident
@@ -66,9 +67,12 @@
 
 /obj/structure/mineral_door/get_mechanics_examine(mob/user)
 	. = ..()
-	. += span_info("Right clicking the door with a key will attempt to lock it.")
-	. += span_info("Left clicking the door with a key will attempt to unlock it.")
-	. += span_info("Kicking an unlocked door will open or close it. Kicking a locked door, if sufficiently strong, can force it open!")
+	. += span_info("Right-clicking the door with a key, whether alone or on a keyring, will attempt to lock it.")
+	. += span_info("Left-clicking the door with a key, whether alone or on a keyring, will attempt to unlock it.")
+	. += span_info("Kicking an unlocked door will open or close it.")
+	. += span_info("Kicking a locked door has a small chance to force it open, which slightly scales with your character's Strength.")
+	. += span_info("Alternatively, doors can be bypassed by destroying them. Axes and bombs of blastpowder are the most effective choices; be mindful that such destruction can be heard from afar, however.")
+	. += span_info("Lockpicks offer a quieter alternative to bypassing doors, but can still be heard by anyone within viewing range, regardless of whatever level they're on.")
 
 /obj/structure/mineral_door/onkick(mob/user)
 	if(isSwitchingStates)
@@ -113,6 +117,7 @@
 	air_update_turf(1)
 	update_icon()
 	isSwitchingStates = FALSE
+	alert_ai_visibility_change(src)
 
 	if(close_delay != -1)
 		addtimer(CALLBACK(src, PROC_REF(Close)), close_delay)
@@ -160,6 +165,9 @@
 		return FALSE
 	if(!ishuman(user))
 		return FALSE
+	if(require_noble_trait && !HAS_TRAIT(user, TRAIT_NOBLE))
+		to_chat(user, span_boldnotice("Only those of noble blood can inherit this house."))
+		return FALSE
 	var/mob/living/carbon/human/human = user
 	if(human.received_resident_key)
 		return FALSE
@@ -167,11 +175,10 @@
 		var/datum/job/job = SSjob.name_occupations[human.job]
 		if(job.type != resident_role)
 			if(!HAS_TRAIT(human, TRAIT_RESIDENT))
+				to_chat(user, span_boldnotice("Only town residents can claim this house."))
 				return FALSE
 	if(resident_advclass)
-		if(!human.advjob)
-			return FALSE
-		var/datum/advclass/advclass = SSrole_class_handler.get_advclass_by_name(human.advjob)
+		var/datum/advclass/advclass = human.get_advclass_datum()
 		if(!advclass)
 			return FALSE
 		if(!(advclass.type in resident_advclass))
@@ -250,9 +257,6 @@
 					addtimer(CALLBACK(src, PROC_REF(Close), FALSE), 25)
 
 
-/obj/structure/mineral_door/attack_paw(mob/user)
-	return attack_hand(user)
-
 /obj/structure/mineral_door/attack_hand(mob/user)
 	. = ..()
 	if(.)
@@ -299,7 +303,7 @@
 	if(ishuman(user))
 		var/mob/living/carbon/human/human_user = user
 		// must have a client or be trying to pass through the door
-		if(!human_user.client && !length(human_user.myPath))
+		if(!human_user.client && !human_user.ai_controller)
 			return FALSE
 		if(human_user.handcuffed)
 			return FALSE
@@ -328,6 +332,7 @@
 	air_update_turf(1)
 	update_icon()
 	isSwitchingStates = FALSE
+	alert_ai_visibility_change(src)
 
 	if(close_delay != -1)
 		addtimer(CALLBACK(src, PROC_REF(Close)), close_delay)
@@ -384,8 +389,7 @@
 	user.changeNext_move(CLICK_CD_FAST)
 	if(istype(I, /obj/item/roguekey) || istype(I, /obj/item/storage/keyring))
 		if(!locked)
-			to_chat(user, span_warning("It won't turn this way. Try turning to the right."))
-			door_rattle()
+			TryToSwitchState(user) //try to open/close
 			return
 		if(autobump == TRUE) //Attackby passes UI coordinate onclick stuff, so forcing check to TRUE
 			trykeylock(I, user, autobump)
@@ -428,10 +432,17 @@
 			return ..()
 
 /obj/structure/mineral_door/attacked_by(obj/item/I, mob/living/user)
+	var/turf/T = get_turf(src)
 	..()
 	if(obj_broken || obj_destroyed)
-		var/obj/effect/track/structure/new_track = SStracks.get_track(/obj/effect/track/structure, get_turf(src))
-		new_track.handle_creation(user)
+		if(!T)
+			return
+		var/obj/effect/track/structure/new_track = SStracks.get_track(/obj/effect/track/structure, T)
+		if(new_track)
+			new_track.handle_creation(user)
+		if(user?.ckey)
+			message_admins("[user.real_name] [obj_destroyed ? "destroyed" : "broke"] [src.name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)] [ADMIN_JMP(src)]")
+			log_admin("[user.real_name] [obj_destroyed ? "destroyed" : "broke"] [src.name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)]")
 
 /obj/structure/mineral_door/proc/repairdoor(obj/item/I, mob/user)
 	if(brokenstate)
@@ -457,7 +468,7 @@
 						playsound(user, 'sound/misc/wood_saw.ogg', 100, TRUE)
 						icon_state = "[base_state]"
 						density = TRUE
-						opacity = TRUE
+						set_opacity(TRUE)
 						brokenstate = FALSE
 						obj_broken = FALSE
 						obj_integrity = max_integrity
@@ -484,7 +495,7 @@
 	var/obj/item = user.get_active_held_item()
 	if(istype(item, /obj/item/roguekey) || istype(item, /obj/item/storage/keyring))
 		if(locked)
-			to_chat(user, span_warning("It won't turn this way. Try turning to the left."))
+			to_chat(user, span_warning("The lock won't turn this way. Try turning to the left."))
 			door_rattle()
 			return
 		trykeylock(item, user)
@@ -557,6 +568,9 @@
 		var/pickchance = 35
 		var/moveup = 10
 
+		var/silentpick = HAS_TRAIT(user, TRAIT_SILENT_LOCKPICK)
+		var/gildedeyes = HAS_TRAIT(user, TRAIT_GILDED_SIGHT)
+
 		picktime -= (pickskill * 10)
 		picktime = clamp(picktime, 10, 70)
 
@@ -579,17 +593,23 @@
 			to_chat(user, "<span class='warning'>Clack.</span>")
 			return
 
+		if(gildedeyes)
+			picktime = clamp(picktime, 10, 15)
+
 		if(ishuman(user))
 			var/mob/living/carbon/human/H = user
-			message_admins("[H.real_name]([key_name(user)]) is attempting to lockpick [src.name]. [ADMIN_JMP(src)]")
-			log_admin("[H.real_name]([key_name(user)]) is attempting to lockpick [src.name].")
+			message_admins("[H.real_name]([key_name(user)]) is attempting to lockpick [src.name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)] [ADMIN_JMP(src)]")
+			log_admin("[H.real_name]([key_name(user)]) is attempting to lockpick [src.name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)]")
 
 		while(!QDELETED(I) &&(lockprogress < locktreshold))
 			if(!do_after(user, picktime, target = src))
 				break
 			if(prob(pickchance))
 				lockprogress += moveup
-				playsound(src.loc, pick('sound/items/pickgood1.ogg','sound/items/pickgood2.ogg'), 5, TRUE)
+				if(silentpick)
+					playsound(src.loc, pick('sound/items/pickgood1.ogg','sound/items/pickgood2.ogg'), 2, TRUE)
+				else
+					playsound(src.loc, pick('sound/items/pickgood1.ogg','sound/items/pickgood2.ogg'), 5, TRUE)
 				to_chat(user, "<span class='warning'>Click...</span>")
 				if(L.mind)
 					add_sleep_experience(L, /datum/skill/misc/lockpicking, L.STAINT/2)
@@ -597,8 +617,8 @@
 					to_chat(user, "<span class='deadsay'>The locking mechanism gives.</span>")
 					if(ishuman(user))
 						var/mob/living/carbon/human/H = user
-						message_admins("[H.real_name]([key_name(user)]) successfully lockpicked [src.name] & [locked ? "unlocked" : "locked"] it. [ADMIN_JMP(src)]")
-						log_admin("[H.real_name]([key_name(user)]) successfully lockpicked [src.name].")
+						message_admins("[H.real_name]([key_name(user)]) successfully lockpicked [src.name] & [locked ? "unlocked" : "locked"] it at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)] [ADMIN_JMP(src)]")
+						log_admin("[H.real_name]([key_name(user)]) successfully lockpicked [src.name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)]")
 						record_featured_stat(FEATURED_STATS_CRIMINALS, user)
 						record_round_statistic(STATS_LOCKS_PICKED)
 						var/obj/effect/track/structure/new_track = SStracks.get_track(/obj/effect/track/structure, get_turf(src))
@@ -608,7 +628,10 @@
 				else
 					continue
 			else
-				playsound(loc, 'sound/items/pickbad.ogg', 40, TRUE)
+				if(silentpick)
+					playsound(loc, 'sound/items/pickbad.ogg', 2, TRUE)
+				else
+					playsound(loc, 'sound/items/pickbad.ogg', 40, TRUE)
 				I.take_damage(1, BRUTE, "blunt")
 				to_chat(user, "<span class='warning'>Clack.</span>")
 				add_sleep_experience(L, /datum/skill/misc/lockpicking, L.STAINT/4)
@@ -621,7 +644,10 @@
 	if(locked)
 		user?.visible_message(span_warning("[user] unlocks [src]."), \
 			span_notice("I unlock [src]."))
-		playsound(src, unlocksound, 100)
+		if(HAS_TRAIT(user, TRAIT_SILENT_LOCKPICK))
+			playsound(src, unlocksound, 25)
+		else
+			playsound(src, unlocksound, 100)
 		locked = 0
 	else
 		user?.visible_message(span_warning("[user] locks [src]."), \
@@ -644,7 +670,7 @@
 	if(!brokenstate)
 		icon_state = "[base_state]br"
 		density = FALSE
-		opacity = FALSE
+		set_opacity(FALSE)
 		brokenstate = TRUE
 	..()
 
@@ -906,11 +932,11 @@
 		return
 	if(opacity)
 		to_chat(user, span_info("I slide the viewport open."))
-		opacity = FALSE
+		set_opacity(FALSE)
 		playsound(src, 'sound/foley/doors/windowup.ogg', 100, FALSE)
 	else
 		to_chat(user, span_info("I slide the viewport closed."))
-		opacity = TRUE
+		set_opacity(TRUE)
 		playsound(src, 'sound/foley/doors/windowup.ogg', 100, FALSE)
 
 /obj/structure/mineral_door/wood/donjon/stone/broken
@@ -1008,16 +1034,19 @@
 /obj/structure/mineral_door/wood/towner/generic/two_keys
 	resident_key_amount = 2
 
+/obj/structure/mineral_door/wood/towner/generic/two_keys/noble
+	require_noble_trait = TRUE
+
 /obj/structure/mineral_door/wood/towner/blacksmith
-	resident_advclass = list(/datum/advclass/blacksmith)
+	resident_advclass = list(/datum/advclass/blacksmith, /datum/advclass/masterblacksmith)
 	lockid = "towner_blacksmith"
 
 /obj/structure/mineral_door/wood/towner/cheesemaker
-	resident_advclass = list(/datum/advclass/cheesemaker)
+	resident_advclass = list(/datum/advclass/cheesemaker, /datum/advclass/masterchef)
 	lockid = "towner_cheesemaker"
 
 /obj/structure/mineral_door/wood/towner/miner
-	resident_advclass = list(/datum/advclass/miner)
+	resident_advclass = list(/datum/advclass/miner, /datum/advclass/minermaster)
 	lockid = "towner_miner"
 
 /obj/structure/mineral_door/wood/towner/seamstress
@@ -1029,7 +1058,7 @@
 	lockid = "towner_woodworker"
 
 /obj/structure/mineral_door/wood/towner/fisher
-	resident_advclass = list(/datum/advclass/fisher)
+	resident_advclass = list(/datum/advclass/fisher, /datum/advclass/fishermaster)
 	lockid = "towner_fisher"
 
 /obj/structure/mineral_door/wood/towner/hunter

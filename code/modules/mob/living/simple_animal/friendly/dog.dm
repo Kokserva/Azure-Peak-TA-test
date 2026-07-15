@@ -12,7 +12,7 @@
 	speak_emote = list("barks", "woofs")
 	emote_hear = list("barks!", "woofs!", "yaps.","pants.")
 	emote_see = list("shakes its head.", "chases its tail.","shivers.")
-	faction = list("neutral")
+	faction = list(FACTION_NEUTRAL)
 	see_in_dark = 5
 	speak_chance = 1
 	turns_per_move = 10
@@ -85,7 +85,6 @@
 	childtype = list(/mob/living/simple_animal/pet/dog/corgi/puppy = 95, /mob/living/simple_animal/pet/dog/corgi/puppy/void = 5)
 	animal_species = /mob/living/simple_animal/pet/dog
 	gold_core_spawnable = FRIENDLY_SPAWN
-	can_be_held = TRUE
 	var/obj/item/inventory_head
 	var/obj/item/inventory_back
 	var/shaved = FALSE
@@ -444,7 +443,7 @@
 	icon_state = "narsian"
 	icon_living = "narsian"
 	icon_dead = "narsian_dead"
-	faction = list("neutral", "cult")
+	faction = list(FACTION_NEUTRAL, FACTION_CULT)
 	gold_core_spawnable = NO_SPAWN
 	nofur = TRUE
 	unique_pet = TRUE

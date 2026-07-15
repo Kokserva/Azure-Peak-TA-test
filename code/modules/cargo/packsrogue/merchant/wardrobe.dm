@@ -21,7 +21,7 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 									)
 
 /datum/supply_pack/rogue/wardrobe/hat/physicianhat
-	name = "Physician's Hat"
+	name = "Doctor's Hat"
 	cost = 25
 	contains = list(
 					/obj/item/clothing/head/roguetown/physician
@@ -35,7 +35,7 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 				)
 
 /datum/supply_pack/rogue/wardrobe/hat/bardhat
-	name = "Minstrel's Hat"
+	name = "Bard's Hat"
 	cost = 25
 	contains = list(
 					/obj/item/clothing/head/roguetown/bardhat,
@@ -125,6 +125,13 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 		/obj/item/clothing/head/roguetown/veiled,
 	)
 
+/datum/supply_pack/rogue/wardrobe/hat/loudmouth_headgear
+	name = "Loudmouth's Headcover"
+	cost = 25
+	contains = list(
+		/obj/item/clothing/head/roguetown/veiled/loudmouth
+	)
+
 /datum/supply_pack/rogue/wardrobe/hat/chaperon
 	name = "Chaperon"
 	cost = 25
@@ -163,6 +170,20 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 	cost = 60
 	contains = list(
 					/obj/item/clothing/mask/rogue/spectacles/golden,
+				)
+
+/datum/supply_pack/rogue/luxury/spectacles_onyxa
+	name = "Onyxa Spectacles"
+	cost = 45
+	contains = list(
+					/obj/item/clothing/mask/rogue/spectacles/sglasses,
+				)
+
+/datum/supply_pack/rogue/luxury/spectacles_monocle
+	name = "Monocle"
+	cost = 30
+	contains = list(
+					/obj/item/clothing/mask/rogue/spectacles/monocle,
 				)
 
 /datum/supply_pack/rogue/wardrobe/masks/ragmask
@@ -250,6 +271,11 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 	cost = 30
 	contains = list(/obj/item/clothing/cloak/poncho)
 
+/datum/supply_pack/rogue/wardrobe/cloaks/bandolier
+	name = "Bandolier"
+	cost = 30
+	contains = list(/obj/item/clothing/cloak/bandolier)
+
 /datum/supply_pack/rogue/wardrobe/cloaks/bcloaks
 	name = "Raincloak, Blue"
 	cost = 30
@@ -287,13 +313,6 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 
 /datum/supply_pack/rogue/wardrobe/cloaks/scarletshroud
 	name = "Tabard, Scarlet Shroud"
-	cost = 30
-	contains = list(
-					/obj/item/clothing/head/roguetown/roguehood/shroudscarlet,
-				)
-
-/datum/supply_pack/rogue/wardrobe/cloaks/blacktabard
-	name = "Shroud, Scarlet Tabard"
 	cost = 30
 	contains = list(
 					/obj/item/clothing/head/roguetown/roguehood/shroudscarlet,
@@ -406,6 +425,13 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 					/obj/item/clothing/suit/roguetown/shirt/undershirt/puritan,
 				)
 
+/datum/supply_pack/rogue/wardrobe/suits/loudmouth_robes
+	name = "Crier's Garb"
+	cost = 40
+	contains = list(
+					/obj/item/clothing/suit/roguetown/shirt/dress/silkdress/loudmouth
+				)
+
 //////////////////////////////////////////////////////////////////////////////
 /// SHIRTS BUT ITS KINDA SUITS TOO THEYRE KINDA THE SAME THING SOMETIMES!!! //
 //////////////////////////////////////////////////////////////////////////////
@@ -483,6 +509,13 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 	cost = 15
 	contains = list(
 					/obj/item/clothing/under/roguetown/tights/black
+				)
+
+/datum/supply_pack/rogue/wardrobe/pants/clothhosen
+	name = "Cloth Hosen"
+	cost = 20
+	contains = list(
+					/obj/item/clothing/under/roguetown/tights/hose
 				)
 
 /datum/supply_pack/rogue/wardrobe/pants/leather_pants
@@ -641,7 +674,7 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 
 
 
-// The "classic" maid uniform. Just a dress, apron, and black stockings. 
+// The "classic" maid uniform. Just a dress, apron, and black stockings.
 /datum/supply_pack/rogue/wardrobe/suits/maid_pack_shitty
 	name = "Cheap Maid Package"
 	no_name_quantity = TRUE
@@ -694,32 +727,32 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 /// WEIRD SHIT / MISC!!! //
 ///////////////////////////
 
-/datum/supply_pack/rogue/wardrobe/suits/exoticsilkbra
-	name = "Exotic Silk Bra"
+/datum/supply_pack/rogue/wardrobe/suits/silkbra
+	name = "Giltsilk Bra"
 	cost = 40
 	contains = list(
-					/obj/item/clothing/suit/roguetown/shirt/exoticsilkbra,
+					/obj/item/clothing/suit/roguetown/shirt/silkbra,
 				)
 
 /datum/supply_pack/rogue/wardrobe/suits/anklets
-	name = "Exotic Silk Anklets"
+	name = "Giltsilk Anklets"
 	cost = 40
 	contains = list(
 					/obj/item/clothing/shoes/roguetown/anklets,
 				)
 
-/datum/supply_pack/rogue/wardrobe/suits/exoticsilkbelt
-	name = "Exotic Silk Belt"
+/datum/supply_pack/rogue/wardrobe/suits/silkbelt
+	name = "Giltsilk Belt"
 	cost = 40
 	contains = list(
-					/obj/item/storage/belt/rogue/leather/exoticsilkbelt,
+					/obj/item/storage/belt/rogue/leather/silkbelt,
 				)
 
-/datum/supply_pack/rogue/wardrobe/suits/exoticsilkmask
-	name = "Exotic Silk Mask"
+/datum/supply_pack/rogue/wardrobe/suits/silkmask
+	name = "Giltsilk Mask"
 	cost = 40
 	contains = list(
-					/obj/item/clothing/mask/rogue/exoticsilkmask,
+					/obj/item/clothing/mask/rogue/silkmask,
 				)
 
 /datum/supply_pack/rogue/wardrobe/caparison/caparison
@@ -748,6 +781,13 @@ A LITTLE MORE CONSISTENT IN HERE. PLEASE DO YOUR BEST. THANKS.
 	cost = 25
 	contains = list(
 					/obj/item/caparison/eora
+				)
+
+/datum/supply_pack/rogue/wardrobe/caparison/caparison_fogbeast
+	name = "Fogbeast Caparison"
+	cost = 25
+	contains = list(
+					/obj/item/caparison/fogbeast,
 				)
 
 /datum/supply_pack/rogue/wardrobe/collar/collar

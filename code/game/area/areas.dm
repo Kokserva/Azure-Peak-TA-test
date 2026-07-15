@@ -62,8 +62,6 @@
 
 //	var/no_air = null
 
-	var/parallax_movedir = 0
-
 	var/list/ambientsounds = GENERIC
 	var/list/ambientrain = null
 	var/list/ambientnight = null
@@ -113,7 +111,7 @@
 
 	var/threat_region = "" // Key used to look up threat region this area belongs to
 	/// Message used for deathsight. Try to be deliberately obtuse but not too obtuse.
-	var/deathsight_message = "a locale wreathed in enigmatic fog"
+	var/deathsight_message
 
 	var/coven_protected = FALSE
 	/// Whether or not an area protects against Necra's vengeful fog
@@ -222,28 +220,18 @@ GLOBAL_LIST_EMPTY(teleportlocs)
   * Register this area as belonging to a z level
   *
   * Ensures the item is added to the SSmapping.areas_in_z list for this z
-  *
-  * It also goes through every item in this areas contents and sets the area level z to it
-  * breaking the exat first time it does this, this seems crazy but what would I know, maybe
-  * areas don't have a valid z themself or something
   */
 /area/proc/reg_in_areas_in_z()
-	if(contents.len)
-		var/list/areas_in_z = SSmapping.areas_in_z
-		var/z
-		update_areasize()
-		for(var/i in 1 to contents.len)
-			var/atom/thing = contents[i]
-			if(!thing)
-				continue
-			z = thing.z
-			break
-		if(!z)
-			WARNING("No z found for [src]")
-			return
-		if(!areas_in_z["[z]"])
-			areas_in_z["[z]"] = list()
-		areas_in_z["[z]"] += src
+	if(!length(contents))
+		return
+	var/list/areas_in_z = SSmapping.areas_in_z
+	update_areasize()
+	if(!z)
+		WARNING("No z found for [src]")
+		return
+	if(!areas_in_z["[z]"])
+		areas_in_z["[z]"] = list()
+	areas_in_z["[z]"] += src
 
 /**
   * Destroy an area and clean it up
@@ -392,29 +380,10 @@ GLOBAL_LIST_EMPTY(teleportlocs)
 	if(!L.ckey || L.stat == DEAD)
 		return
 
-	// Ambience goes down here -- make sure to list each area separately for ease of adding things in later, thanks! Note: areas adjacent to each other should have the same sounds to prevent cutoff when possible.- LastyScratch
-//	if(L.client && !L.client.ambience_playing && L.client.prefs.toggles & SOUND_SHIP_AMBIENCE)
-//		L.client.ambience_playing = 1
-//		SEND_SOUND(L, sound('sound/blank.ogg', repeat = 1, wait = 0, volume = 35, channel = CHANNEL_BUZZ))
-
 	if(first_time_text)
 		L.intro_area(src)
 	if(SSevent_scheduler.fog_active)
 		SSevent_scheduler.update_mob_fog_status(M, fog_protected)
-
-	var/mob/living/living_arrived = M
-
-	if(istype(living_arrived) && living_arrived.client && !living_arrived.cmode)
-		//Ambience if combat mode is off
-		SSdroning.area_entered(src, living_arrived.client)
-		SSdroning.play_loop(src, living_arrived.client)
-		var/found = FALSE
-		for(var/datum/weather/rain/R in SSweather.curweathers)
-			found = TRUE
-		if(found)
-			SSdroning.play_rain(src, living_arrived.client)
-
-//	L.play_ambience(src)
 
 /client
 	var/musicfading = 0

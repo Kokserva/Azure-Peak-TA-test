@@ -35,7 +35,7 @@
 	update_brightness(user)
 	for(var/X in actions)
 		var/datum/action/A = X
-		A.UpdateButtonIcon()
+		A.build_all_button_icons()
 	return 1
 
 /obj/item/flashlight/suicide_act(mob/living/carbon/human/user)
@@ -47,6 +47,16 @@
 
 /obj/item/flashlight/attack(mob/living/carbon/M, mob/living/carbon/human/user)
 	add_fingerprint(user)
+	if(on)
+		if(user.zone_selected == BODY_ZONE_PRECISE_MOUTH)
+			var/obj/item/clothing/mask/cigarette/cig = help_light_cig(M)
+			if(cig)
+				if(!cig.lit)
+					if(M == user)
+						cig.attackby(src, user)
+					else
+						cig.light(span_notice("[user] holds [src] out for [M], and lights [cig]."))
+				return 1
 	return ..()
 
 // FLARES
@@ -145,10 +155,10 @@
 	var/should_self_destruct = TRUE
 	max_integrity = 50
 	fuel = 30 MINUTES
-	light_depth = 0
-	light_height = 0
 	grid_width = 32
 	grid_height = 32
+	experimental_onhip = TRUE
+	experimental_inhand = TRUE
 
 /obj/item/flashlight/flare/torch/getonmobprop(tag)
 	. = ..()
@@ -158,6 +168,12 @@
 				return list("shrink" = 0.7,"sx" = -8,"sy" = 4,"nx" = 10,"ny" = 4,"wx" = -7,"wy" = 3,"ex" = 2,"ey" = 6,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0,"nturn" = 2,"sturn" = 2,"wturn" = -2,"eturn" = -2,"nflip" = 0,"sflip" = 8,"wflip" = 8,"eflip" = 0)
 			if("onbelt")
 				return list("shrink" = 0.3,"sx" = -2,"sy" = -5,"nx" = 4,"ny" = -5,"wx" = 0,"wy" = -5,"ex" = 2,"ey" = -5,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
+
+/obj/item/flashlight/flare/torch/get_mechanics_examine(mob/user)
+	. = ..()
+	. += span_info("Ovens, hearths, braziers, scones, candles, bushes, grasspatches, and other certain structures can be set alight by left-clicking them while on the 'USE' intent.")
+	. += span_info("Standing in front of an unignited light source while sharpening a blade - or striking two stones together - can eventually reignite it.")
+	. += span_info("Click on a person while targeting their mouth zone to light their smoke.")
 
 /obj/item/flashlight/flare/torch/Initialize()
 	GLOB.weather_act_upon_list += src
@@ -306,6 +322,7 @@
 	grid_height = 64
 	extinguishable = FALSE
 	weather_resistant = TRUE
+	experimental_onhip = FALSE //Looks a little wonky due to how belts overlay with hip items. Reenable if you wish, but be mindful of that fact.
 
 /obj/item/flashlight/flare/torch/lantern/afterattack(atom/movable/A, mob/user, proximity)
 	. = ..()
@@ -325,11 +342,10 @@
 		STOP_PROCESSING(SSobj, src)
 
 /obj/item/flashlight/flare/torch/lantern/getonmobprop(tag)
-	. = ..()
 	if(tag)
 		switch(tag)
 			if("gen")
-				return list("shrink" = 0.4,"sx" = -2,"sy" = -4,"nx" = 9,"ny" = -4,"wx" = -3,"wy" = -4,"ex" = 2,"ey" = -4,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0)
+				return list("shrink" = 0.4,"sx" = -7,"sy" = -4,"nx" = 7,"ny" = -4,"wx" = -4,"wy" = -4,"ex" = 2,"ey" = -4,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
 			if("onbelt")
 				return list("shrink" = 0.3,"sx" = -2,"sy" = -5,"nx" = 4,"ny" = -5,"wx" = 0,"wy" = -5,"ex" = 2,"ey" = -5,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
 
@@ -341,6 +357,7 @@
 	name = "bronze handlamptern"
 	icon_state = "lesserbronzelamp"
 	desc = "A light to guide the way, and a cage to carry your flame."
+	on = FALSE
 
 /obj/item/flashlight/flare/torch/lantern/bronzelamptern
 	name = "bronze lamptern"
@@ -407,15 +424,6 @@
 	fuel = 120 MINUTES
 	should_self_destruct = FALSE
 
-/obj/item/flashlight/flare/torch/lantern/copper/getonmobprop(tag)
-	. = ..()
-	if(tag)
-		switch(tag)
-			if("gen")
-				return list("shrink" = 0.4,"sx" = -2,"sy" = -4,"nx" = 9,"ny" = -4,"wx" = -3,"wy" = -4,"ex" = 2,"ey" = -4,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0)
-			if("onbelt")
-				return list("shrink" = 0.3,"sx" = -2,"sy" = -5,"nx" = 4,"ny" = -5,"wx" = 0,"wy" = -5,"ex" = 2,"ey" = -5,"nturn" = 0,"sturn" = 0,"wturn" = 0,"eturn" = 0,"nflip" = 0,"sflip" = 0,"wflip" = 0,"eflip" = 0,"northabove" = 0,"southabove" = 1,"eastabove" = 1,"westabove" = 0)
-
 /obj/item/flashlight/flare/torch/lantern/pumpkin
 	name = "pumpkin lamptern"
 	desc = "A decorated pumpkin shell. Usually seasonal, a frightful beacon in the night."
@@ -427,7 +435,6 @@
 	w_class = WEIGHT_CLASS_SMALL
 	light_color = "#ffb272ff"
 	on = FALSE
-
 	slot_flags = ITEM_SLOT_HEAD
 	flags_inv = HIDEFACE|HIDEEARS|HIDEHAIR|HIDEFACIALHAIR|HIDESNOUT
 	body_parts_covered = FULL_HEAD|NECK
@@ -435,13 +442,13 @@
 	block2add = FOV_BEHIND
 	equip_delay_self = 3 SECONDS
 	unequip_delay_self = 3 SECONDS
-
 	force = 1
 	on_damage = 3
 	wdefense = 1 //The pumpkin has a chance of getting in the way of strikes.
 	fuel = 0 MINUTES
 	should_self_destruct = FALSE
 	sellprice = 8 //Allows a minor business to bloom from them. This may require adjustments.
+	dropshrink = null
 
 /obj/item/flashlight/flare/torch/lantern/pumpkin/examine(mob/user)
 	. = ..()
@@ -488,6 +495,9 @@
 	icon_state = "pumpkinlampz"
 	item_state = "pumpkinlampz"
 	light_color = "#ceff72ff"
+
+/obj/item/flashlight/flare/torch/lantern/pumpkin/zizo/get_examine_highlight_status()
+	return list(EXAMINEHIGHLIGHT_HERESYSEVERITY_SUSPICIOUS, "GREAT GOOGLY MOOGLY, THAT PUMPKIN IS PRAISING SHE OF Z!")
 
 /obj/item/flashlight/flare/torch/lantern/pumpkin/grin
 	name = "smiling pumpkin lamptern"

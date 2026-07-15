@@ -1,9 +1,9 @@
 /datum/advclass/iconoclast //Support Cleric, Heavy armor, unarmed, miracles.
 	name = "Iconoclast"
-	tutorial = "Trained by an Ecclesial sect, you uphold the Ideological purity of the Matthian Creed. Take from the wealthy, give to the worthless, empower. They will look up to you, in search of the God of Robbery's guidance. Be their light in the dark."
+	tutorial = "Trained by an Ecclesial sect, you uphold the Ideological purity of the Matthiosian Creed. Take from the wealthy, give to the worthless, empower. They will look up to you, in search of the God of Robbery's guidance. Be their light in the dark."
 	extra_context = "Chosen of Matthios gives you weapon skills and as well access to HEAVY ARMOR training. Golden Serpent is limited to his fists (cannot even use shields nor punch weapons) and is forced to have BRONZE ARM / MISSING EYE."
 	allowed_sexes = list(MALE, FEMALE)
-	allowed_races = ACCEPTED_RACES
+	forbidden_races = list(RACES_DESPISED)
 	outfit = /datum/outfit/job/roguetown/bandit/iconoclast
 	category_tags = list(CTAG_BANDIT)
 	maximum_possible_slots = 1 // We only want one of these.
@@ -37,6 +37,7 @@
 	belt = /obj/item/storage/belt/rogue/leather
 	pants = /obj/item/clothing/under/roguetown/trou/leather
 	backr = /obj/item/storage/backpack/rogue/satchel
+	id = /obj/item/clothing/neck/roguetown/psicross/inhumen/matthios //IS THIS TRVE? WE NEED TO USE MIRACLES SIRE.
 	backpack_contents = list(
 					/obj/item/needle/thorn = 1,
 					/obj/item/natural/cloth = 1,
@@ -46,6 +47,7 @@
 	id = /obj/item/mattcoin
 	var/datum/devotion/C = new /datum/devotion(H, H.patron)
 	C.grant_miracles(H, cleric_tier = CLERIC_T4, passive_gain = CLERIC_REGEN_MAJOR, start_maxed = TRUE)	//Starts off maxed out.
+	H.mind.AddSpell(new /datum/action/cooldown/spell/matthios/raze)
 	var/subtype = list("Chosen of Matthios", "Golden Serpent")
 	if(H.mind)
 		var/subtype_choice = input(H, "Choose your path.", "TAKE UP ARMS") as anything in subtype
@@ -79,7 +81,7 @@
 				H.adjust_skillrank_up_to(/datum/skill/combat/unarmed, SKILL_LEVEL_LEGENDARY, TRUE)
 				H.change_stat(STATKEY_CON, 2)
 				H.change_stat(STATKEY_LCK, -2)
-				H.mind.AddSpell(new /obj/effect/proc_holder/spell/invoked/mending/lesser)//So he can fix his arm
+				H.mind.AddSpell(new /datum/action/cooldown/spell/mending/lesser)//So he can fix his arm
 				var/static/list/safe_bodyzones = list(
 					BODY_ZONE_HEAD,
 					BODY_ZONE_CHEST,

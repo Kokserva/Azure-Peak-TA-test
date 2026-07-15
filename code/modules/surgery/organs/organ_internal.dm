@@ -47,8 +47,8 @@
 	var/organ_dna_type = /datum/organ_dna
 	/// What food typepath should be used when eaten
 	var/food_type = /obj/item/reagent_containers/food/snacks/organ
-	/// Original owner of the organ, the one who had it inside them last
-	var/mob/living/carbon/last_owner = null
+	/// Whether this organ has ever been inside a mob
+	var/had_owner = FALSE
 
 	grid_width = 32
 	grid_height = 32
@@ -66,7 +66,7 @@
 			qdel(replaced)
 
 	owner = M
-	last_owner = M
+	had_owner = TRUE
 
 	if (visible_organ)
 		M.visible_organs |= src
@@ -108,7 +108,7 @@
 //	START_PROCESSING(SSobj, src)
 
 /obj/item/organ/forceMove(atom/destination)
-	if((organ_flags & ORGAN_INTERNAL_ONLY) && last_owner)
+	if((organ_flags & ORGAN_INTERNAL_ONLY) && had_owner)
 		qdel(src)
 		return
 	..()
@@ -186,16 +186,16 @@
 	QDEL_NULL(organ_inside)
 	return ..()
 
-/obj/item/reagent_containers/food/snacks/organ/proc/check_culling(mob/living/eater)
-	return
-
 /obj/item/reagent_containers/food/snacks/organ/heart
 	list_reagents = list(/datum/reagent/consumable/nutriment = 6, /datum/reagent/organpoison = 2)
 	grind_results = list(/datum/reagent/organpoison = 6)
 
-/obj/item/reagent_containers/food/snacks/organ/heart/check_culling(mob/living/eater)
+/obj/item/reagent_containers/food/snacks/organ/proc/check_culling(mob/living/eater)
+	return
+
+/obj/item/reagent_containers/food/snacks/organ/check_culling(mob/living/eater)
 	. = ..()
-	if(!organ_inside)
+	if(QDELETED(organ_inside) || !istype(organ_inside, /obj/item/organ/heart))
 		return
 
 	for(var/datum/culling_duel/D in GLOB.graggar_cullings)
@@ -222,7 +222,7 @@
 		// The special flag is important, because otherwise mobs can die
 		// while undergoing transformation into different mobs.
 		Remove(owner, special=TRUE)
-	last_owner = null
+	had_owner = FALSE
 	STOP_PROCESSING(SSobj, src)
 	return ..()
 
@@ -358,6 +358,8 @@
 			return
 		source_key_list = color_key_source_list_from_carbon(owner)
 	var/datum/sprite_accessory/accessory = SPRITE_ACCESSORY(accessory_type)
+	if(!accessory)
+		return
 	accessory_colors = accessory.get_default_colors(source_key_list)
 	accessory_colors = accessory.validate_color_keys_for_owner(owner, accessory_colors)
 	update_accessory_colors()

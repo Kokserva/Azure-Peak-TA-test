@@ -15,7 +15,15 @@
 	STASTR = 13
 	STASPD = 9
 	maxHealth = DEEPONE_HEALTH
-	butcher_results = list(/obj/item/reagent_containers/food/snacks/rogue/meat/crab = 5, /obj/item/alch/viscera = 2)
+	botched_butcher_results = list(/obj/item/reagent_containers/food/snacks/rogue/meat/crab = 1)
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/rogue/meat/crab = 2,
+						   /obj/item/reagent_containers/food/snacks/rogue/meat/crab = 2,
+						   /obj/item/reagent_containers/food/snacks/rogue/meat/crab = 1,
+						   /obj/item/alch/viscera = 2)
+	perfect_butcher_results = list(/obj/item/reagent_containers/food/snacks/rogue/meat/crab = 2,
+						   /obj/item/reagent_containers/food/snacks/rogue/meat/crab = 2,
+						   /obj/item/reagent_containers/food/snacks/rogue/meat/crab = 2,
+						   /obj/item/alch/viscera = 2)
 	health = DEEPONE_HEALTH
 	harm_intent_damage = 20
 	melee_damage_lower = 10
@@ -33,7 +41,9 @@
 	d_intent = INTENT_DODGE
 	defprob = 50
 	speak_emote = list("burbles")
-	faction = list("deepone")
+	faction = list(FACTION_DEEPONE)
+	threat_point = THREAT_HIGH
+	ambush_faction = "deepones"
 	footstep_type = FOOTSTEP_MOB_BAREFOOT
 
 	can_have_ai = FALSE 
@@ -41,6 +51,9 @@
 
 	ai_controller = /datum/ai_controller/deepone
 
+/mob/living/simple_animal/hostile/rogue/deepone/Initialize()
+	. = ..()
+	AddComponent(/datum/component/ai_aggro_system)
 
 /mob/living/simple_animal/hostile/rogue/deepone/arm
 	name = "Deep One"
@@ -55,6 +68,7 @@
 	attack_verb_simple = "maul"
 
 /mob/living/simple_animal/hostile/rogue/deepone/spit
+	threat_point = THREAT_TOUGH
 	name = "Deep One"
 	icon = 'icons/roguetown/mob/monster/fishman.dmi'
 	icon_state = "deep1_spit"
@@ -70,6 +84,7 @@
 	ai_controller = /datum/ai_controller/deepone_ranged
 
 /mob/living/simple_animal/hostile/rogue/deepone/wiz
+	threat_point = THREAT_TOUGH
 	name = "Deep One Devout"
 	icon = 'icons/roguetown/mob/monster/fishman.dmi'
 	icon_state = "deep1_wiz"
@@ -103,7 +118,7 @@
 	animname = "cut"
 	hitsound = 'sound/combat/hits/bladed/smallslash (1).ogg'
 	clickcd = DEEPONE_ATTACK_SPEED
-	penfactor = 5
+	penfactor = PEN_NONE
 	chargetime = 2
 /datum/intent/simple/claw/deepone_boss
 	attack_verb = list("smashes", "slams")
@@ -111,5 +126,5 @@
 	animname = "cut"
 	hitsound = 'sound/combat/hits/blunt/metalblunt (1).ogg'
 	clickcd = DEEPONE_ATTACK_SPEED
-	penfactor = 5
+	penfactor = PEN_NONE
 	chargetime = 2

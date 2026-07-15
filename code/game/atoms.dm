@@ -48,14 +48,7 @@
 
 	var/voicecolor_override
 
-	///overlays that should remain on top and not normally removed when using cut_overlay functions, like c4.
-	var/list/priority_overlays
-	/// a very temporary list of overlays to remove
-	var/list/remove_overlays
-	/// a very temporary list of overlays to add
-	var/list/add_overlays
-
-	///vis overlays managed by SSvis_overlays to automaticaly turn them like other overlays
+	///vis overlays managed by SSvis_overlays so they survive icon rebuilds while inheriting owner dir
 	var/list/managed_vis_overlays
 	///overlays managed by update_overlays() to prevent removing overlays that weren't added by the same proc
 	var/list/managed_overlays
@@ -180,7 +173,7 @@
 
 	if (opacity && isturf(loc))
 		var/turf/T = loc
-		T.has_opaque_atom = TRUE // No need to recalculate it in this case, it's guaranteed to be on afterwards anyways.
+		T.opaque_atom_count++
 
 	if (canSmoothWith)
 		canSmoothWith = typelist("canSmoothWith", canSmoothWith)
@@ -231,7 +224,6 @@
 	orbiters = null // The component is attached to us normaly and will be deleted elsewhere
 
 	LAZYCLEARLIST(overlays)
-	LAZYCLEARLIST(priority_overlays)
 
 	QDEL_NULL(light)
 	QDEL_NULL(ai_controller)
@@ -458,7 +450,7 @@
 				var/obj/item/reagent_containers/container = src
 				is_closed = !container.spillable
 			if(is_closed == FALSE && reagents.total_volume) // if the container is open, and there's liquids in there
-				user.visible_message(span_info("[user] takes a whiff of the [src]..."), span_info("I take a whiff of the [src]..."))
+				user.visible_message(span_info("[user] takes a whiff of [src]..."), span_info("I take a whiff of [src]..."))
 				. += span_notice("I smell [src.reagents.generate_scent_message()].")
 				if (HAS_TRAIT(user, TRAIT_LEGENDARY_ALCHEMIST))
 					var/full_reagents = ""
@@ -506,6 +498,8 @@
 		update_icon_state()
 
 	if(!(signalOut & COMSIG_ATOM_NO_UPDATE_OVERLAYS))
+		if(length(managed_vis_overlays))
+			SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
 		var/list/new_overlays = update_overlays()
 		if(managed_overlays)
 			cut_overlay(managed_overlays)
@@ -565,7 +559,7 @@
  */
 /atom/proc/hitby(atom/movable/AM, skipcatch, hitpush, blocked, datum/thrownthing/throwingdatum, damage_flag = "blunt")
 	SEND_SIGNAL(src, COMSIG_ATOM_HITBY, AM, skipcatch, hitpush, blocked, throwingdatum, damage_flag)
-	if(density) //thrown stuff bounces off dense stuff in no grav, unless the thrown stuff ends up inside what it hit(embedding, bola, etc...).
+	if(density && !(pass_flags_self & LETPASSTHROW)) //thrown stuff bounces off dense stuff in no grav, unless the thrown stuff ends up inside what it hit(embedding, bola, etc...).
 		addtimer(CALLBACK(src, PROC_REF(hitby_react), AM), 2)
 
 /**
@@ -613,9 +607,28 @@
 ///to add blood from a mob onto something, and transfer their dna info
 /atom/proc/add_mob_blood(mob/living/M)
 	var/list/blood_dna = M.get_blood_dna_list()
-	if(!blood_dna)
-		return FALSE
-	return add_blood_DNA(blood_dna)
+	var/source_color = M.get_blood_color() || BLOOD_COLOR_RED
+	if(length(blood_dna))
+		. = add_blood_DNA(blood_dna)
+	if(ismob(src))
+		var/mob/recipient = src
+		recipient.bloody_hands_color = source_color
+		if(ishuman(recipient))
+			var/mob/living/carbon/human/H = recipient
+			if(H.gloves)
+				var/datum/component/decal/blood/glove_blood = H.gloves.LoadComponent(/datum/component/decal/blood)
+				glove_blood?.set_blood_color(source_color)
+			else if(!H.bloody_hands)
+				H.bloody_hands = rand(2, 4)
+			H.update_inv_gloves()
+			if(istype(H.shoes, /obj/item/clothing/shoes))
+				var/obj/item/clothing/shoes/S = H.shoes
+				var/datum/component/decal/blood/shoe_blood = S.LoadComponent(/datum/component/decal/blood)
+				shoe_blood?.set_blood_color(source_color)
+				H.update_inv_shoes()
+	else if(isitem(src))
+		var/datum/component/decal/blood/B = LoadComponent(/datum/component/decal/blood)
+		B?.set_blood_color(source_color)
 
 ///Called when gravity returns after floating I think
 /atom/proc/handle_fall()
@@ -1073,10 +1086,14 @@
 			log_adminsay(log_text)
 		if(LOG_OWNERSHIP)
 			log_game(log_text)
+		if(LOG_CRAFT)
+			log_game(log_text)
 		if(LOG_GAME)
 			log_game(log_text)
 		if(LOG_MECHA)
 			log_mecha(log_text)
+		if(LOG_NPC_SAY)
+			log_npc_say(log_text)
 		else
 			stack_trace("Invalid individual logging type: [message_type]. Defaulting to [LOG_GAME] (LOG_GAME).")
 			log_game(log_text)
@@ -1175,6 +1192,9 @@
 		filter_data = list()
 	var/list/p = params.Copy()
 	p["priority"] = priority
+	if(("color" in p) && !isnull(p["color"]) && !istext(p["color"]) && !islist(p["color"]))
+		stack_trace("filter '[name]' on [type] given non-text non-list color [p["color"]] - fix the caller")
+		return
 	filter_data[name] = p
 	update_filters()
 
@@ -1242,6 +1262,9 @@
 	var/filter = get_filter(name)
 	if(!filter)
 		return
+	if(("color" in new_params) && !isnull(new_params["color"]) && !istext(new_params["color"]) && !islist(new_params["color"]))
+		stack_trace("filter '[name]' on [type] given non-text non-list color [new_params["color"]] - fix the caller")
+		return
 	if(overwrite)
 		filter_data[name] = new_params
 	else
@@ -1277,7 +1300,7 @@
 /atom/proc/get_filter_index(name)
 	return filter_data?.Find(name)
 
-//Automatically turns based on nearby walls, destroys if not valid. 
+//Automatically turns based on nearby walls, destroys if not valid.
 /atom/proc/auto_turn_destructive()
 	var/turf/closed/T = null
 	var/gotdir = 0

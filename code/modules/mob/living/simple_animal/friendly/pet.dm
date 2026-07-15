@@ -7,6 +7,9 @@
 	var/obj/item/clothing/neck/petcollar/pcollar
 	var/collar_type //if the mob has collar sprites, define them.
 
+/mob/living/simple_animal/pet/can_be_held(mob/by)
+	return TRUE
+
 /mob/living/simple_animal/pet/handle_atom_del(atom/A)
 	if(A == pcollar)
 		pcollar = null
@@ -53,7 +56,7 @@
 		collar_type = "[initial(collar_type)]_dead"
 	regenerate_icons()
 
-/mob/living/simple_animal/pet/gib()
+/mob/living/simple_animal/pet/gib(no_brain = FALSE, no_organs = FALSE, no_bodyparts = FALSE)
 	if(pcollar)
 		pcollar.forceMove(drop_location())
 		pcollar = null

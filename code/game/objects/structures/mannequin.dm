@@ -117,9 +117,6 @@
 		return
 	tryEquip(user)
 
-/obj/structure/mannequin/attack_paw(mob/user)
-	return attack_hand(user)
-
 /*
 * Taken from paperbin code. Its a bit immersion breaking
 * but easier to use.
@@ -204,6 +201,7 @@
 	. += "<BR><B>Armor:</B> <A href='byond://?src=[REF(src)];command=item_placement;item_slot=[BODY_ZONE_CHEST]'>[makeStrippingButton(clothing[SLOT_MANNEQUIN_ARMOR])]</A>"
 	. += "<BR><B>Shirt:</B> <A href='byond://?src=[REF(src)];command=item_placement;item_slot=[BODY_ZONE_PRECISE_STOMACH]'>[makeStrippingButton(clothing[SLOT_MANNEQUIN_SHIRT])]</A>"
 	. += "<BR><B>Belt:</B> <A href='byond://?src=[REF(src)];command=item_placement;item_slot=[BODY_ZONE_PRECISE_GROIN]'>[makeStrippingButton(clothing[SLOT_MANNEQUIN_BELT])]</A>"
+	. += "<BR><B>Pants:</B> <A href='byond://?src=[REF(src)];command=item_placement;item_slot=[SLOT_MANNEQUIN_PANTS]'>[makeStrippingButton(clothing[SLOT_MANNEQUIN_PANTS])]</A>" //No direct slot to equip.
 	. += "<BR><B>Ring:</B> <A href='byond://?src=[REF(src)];command=item_placement;item_slot=[SLOT_MANNEQUIN_RING]'>[makeStrippingButton(clothing[SLOT_MANNEQUIN_RING])]</A>" //No direct slot to equip.
 
 /obj/structure/mannequin/attackby(obj/item/I, mob/user)
@@ -738,6 +736,12 @@
 	name = "decorative display"
 	desc = "Due to magic or fragile material the clothing on this one cannot be taken off."
 	unchangeable = TRUE
+
+/obj/structure/mannequin/male/decorative/woman
+	icon_state = "woman"
+
+/obj/structure/mannequin/male/decorative/training_dummy_style
+	icon_state = "coat_hanger"
 
 /obj/structure/mannequin/male/female
 	name = "mannequin"

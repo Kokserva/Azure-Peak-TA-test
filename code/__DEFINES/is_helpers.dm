@@ -82,6 +82,7 @@ GLOBAL_LIST_INIT(our_forest_sex, typecacheof(list(
 #define iself(A) (is_species(A, /datum/species/elf))
 #define isdarkelf(A) (is_species(A, /datum/species/elf/dark))
 #define iswoodelf(A) (is_species(A, /datum/species/elf/wood))
+#define issunelf(A) (is_species(A, /datum/species/elf/sun))
 #define ishalfelf(A) (is_species(A, /datum/species/human/halfelf))
 #define istiefling(A) (is_species(A, /datum/species/tieberian))
 #define isdullahan(A) (is_species(A, /datum/species/dullahan))
@@ -100,10 +101,9 @@ GLOBAL_LIST_INIT(our_forest_sex, typecacheof(list(
 #define ismoth(A) (is_species(A, /datum/species/moth))
 #define istabaxi(A) (is_species(A, /datum/species/tabaxi))
 #define isvulp(A) (is_species(A, /datum/species/vulpkanin))
+#define isooze(A) (is_species(A, /datum/species/ooze))
+#define isgnoll(A) (is_species(A, /datum/species/gnoll))
 
-
-//more carbon mobs
-#define ismonkey(A) (istype(A, /mob/living/carbon/monkey))
 
 //Simple animals
 #define isanimal(A) (istype(A, /mob/living/simple_animal))
@@ -140,6 +140,12 @@ GLOBAL_LIST_INIT(our_forest_sex, typecacheof(list(
 //Misc mobs
 #define isobserver(A) (istype(A, /mob/dead/observer))
 
+#define isplayerghost(A) (isobserver(A) && !isscryeye(A) && !isadminghost(A))
+
+#define isscryeye(A) (istype(A, /mob/dead/observer/eye))
+
+#define isadminghost(A) (istype(A, /mob/dead/observer/admin))
+
 #define isdead(A) (istype(A, /mob/dead))
 
 #define isnewplayer(A) (istype(A, /mob/dead/new_player))
@@ -154,6 +160,12 @@ GLOBAL_LIST_INIT(our_forest_sex, typecacheof(list(
 #define isobj(A) istype(A, /obj) //override the byond proc because it returns true on children of /atom/movable that aren't objs
 
 #define isitem(A) (istype(A, /obj/item))
+
+#define isweapon(A) (istype(A, /obj/item/rogueweapon))
+
+#define isammo(A) (istype(A, /obj/item/ammo_casing))
+
+#define isreagentcontainer(A) (istype(A, /obj/item/reagent_containers))
 
 #define isidcard(I) (istype(I, /obj/item/card/id))
 
@@ -193,3 +205,4 @@ GLOBAL_VAR_INIT(magic_appearance_detecting_image, new /image) // appearances are
 #define isimage(thing) (istype(thing, /image))
 #define isappearance(thing) (!isimage(thing) && !ispath(thing) && istype(GLOB.magic_appearance_detecting_image, thing))
 #define isappearance_or_image(thing) (isimage(thing) || (!ispath(thing) && istype(GLOB.magic_appearance_detecting_image, thing)))
+#define is_ooze_wound(A) (istype(A, /datum/wound/fracture) || istype(A, /datum/wound/dislocation)) //Defines what kinds of wounds cause ooze limbs to melt.

@@ -1,14 +1,16 @@
 /mob/living/carbon/Initialize()
 	..()
 
-	pain_threshold = STAWIL * 10
-
-	if(HAS_TRAIT(src, TRAIT_NOPAIN))
-		pain_threshold = 250
+	recalculate_pain_threshold()
 
 	create_reagents(1000)
 	update_body_parts() //to update the carbon's new bodyparts appearance
 	GLOB.carbon_list += src
+
+/mob/living/carbon/proc/recalculate_pain_threshold()
+	pain_threshold = STAWIL * 10
+	if(HAS_TRAIT(src, TRAIT_NOPAIN))
+		pain_threshold = 250
 
 /mob/living/carbon/Destroy()
 	//This must be done first, so the mob ghosts correctly before DNA etc is nulled
@@ -78,11 +80,10 @@
 		var/atom/movable/screen/inventory/hand/H
 		H = hud_used.hand_slots["[oindex]"]
 		if(H)
-			H.update_icon()
+			H.update_hand_vis()
 		H = hud_used.hand_slots["[held_index]"]
 		if(H)
-			H.update_icon()
-		H = hud_used.action_intent
+			H.update_hand_vis()
 	oactive = FALSE
 	update_a_intents()
 	return TRUE
@@ -257,9 +258,14 @@
 			if(HAS_TRAIT(src, TRAIT_PACIFISM) && I.throwforce)
 				to_chat(src, "<span class='notice'>I set [I] down gently on the ground.</span>")
 				return
-
+			if(HAS_TRAIT(src, TRAIT_DEADITE)) //Zombies are too stupid to throw things at all...
+				to_chat(src, "<span class='warning'>...What?</span>")
+				return
 
 	if(thrown_thing)
+		if(rogue_sneaking)
+			mob_timers[MT_FOUNDSNEAK] = world.time
+			update_sneak_invis(reset = TRUE)
 		if(!thrown_speed)
 			thrown_speed = thrown_thing.throw_speed
 		if(!thrown_range)
@@ -275,6 +281,8 @@
 		playsound(get_turf(src), used_sound, 60, FALSE)
 
 /mob/living/carbon/restrained(ignore_grab = TRUE)
+	if(..())
+		return TRUE
 //	. = (handcuffed || (!ignore_grab && pulledby && pulledby.grab_state >= GRAB_AGGRESSIVE))
 	if(handcuffed)
 		return TRUE
@@ -558,36 +566,17 @@
 			used = 1
 		return used
 
-/mob/living/Stat()
-	..()
-	if(statpanel("Stats"))
-		stat("STR: \Roman [STASTR]")
-		stat("PER: \Roman [STAPER]")
-		stat("INT: \Roman [STAINT]")
-		stat("CON: \Roman [STACON]")
-		stat("WIL: \Roman [STAWIL]")
-		stat("SPD: \Roman [STASPD]")
-		stat("FOR: \Roman [STALUC]")
-		stat("PATRON: [patron]")
-
-/mob/living/carbon/Stat()
-	..()
-	add_abilities_to_panel()
-
 /mob/living/carbon/attack_ui(slot)
 	if(!has_hand_for_held_index(active_hand_index))
 		return 0
 	return ..()
 
-/mob/living/carbon
-	var/nausea = 0
-	var/bleeding_tier = 0
 
 /mob/living/carbon/proc/add_nausea(amt)
 	nausea = clamp(nausea + amt, 0, 300)
 
 /mob/living/carbon/proc/handle_nausea()
-	if(HAS_TRAIT(src, TRAIT_ROTMAN))
+	if(HAS_TRAIT(src, TRAIT_ROTMAN)||HAS_TRAIT(src, TRAIT_IRONMAN))
 		return TRUE
 	if(stat == DEAD)
 		return TRUE
@@ -610,6 +599,9 @@
 
 
 /mob/living/carbon/proc/vomit(lost_nutrition = 50, blood = FALSE, stun = TRUE, distance = 1, message = TRUE, toxic = FALSE, harm = FALSE, force = FALSE)
+	if(HAS_TRAIT(src, TRAIT_IRONMAN))
+		return TRUE
+	
 	if(HAS_TRAIT(src, TRAIT_TOXINLOVER) && !force)
 		return TRUE
 
@@ -743,23 +735,10 @@
 /mob/living/carbon/updatehealth()
 	if(status_flags & GODMODE)
 		return
-	var/total_burn	= 0
-//	var/total_brute	= 0
 	var/total_stamina = 0
 	var/total_tox = getToxLoss()
 	var/total_oxy = getOxyLoss()
 	var/used_damage = 0
-	var/static/list/lethal_zones = list(
-		BODY_ZONE_HEAD,
-		BODY_ZONE_CHEST,
-	)
-	for(var/obj/item/bodypart/bodypart as anything in bodyparts) //hardcoded to streamline things a bit
-		if(!(bodypart.body_zone in lethal_zones))
-			continue
-		var/hardcrit_divisor = !mind ? FIRE_HARDCRIT_DIVISOR_MINDLESS : FIRE_HARDCRIT_DIVISOR
-		var/my_burn = abs((bodypart.burn_dam / bodypart.max_damage) * hardcrit_divisor)
-		total_burn = max(total_burn, my_burn)
-		used_damage = max(used_damage, my_burn)
 	if(used_damage < total_tox)
 		used_damage = total_tox
 	if(used_damage < total_oxy)
@@ -774,9 +753,6 @@
 	else
 		remove_movespeed_modifier(MOVESPEED_ID_CARBON_SOFTCRIT, TRUE)
 	SEND_SIGNAL(src, COMSIG_LIVING_HEALTH_UPDATE)
-
-/mob/living/carbon
-	var/lightning_flashing = FALSE
 
 /mob/living/carbon/update_sight()
 	if(!client)
@@ -823,6 +799,10 @@
 		lighting_alpha = min(lighting_alpha, LIGHTING_PLANE_ALPHA_DARKVISION)
 		see_in_dark = max(see_in_dark, 12)
 
+	if(HAS_TRAIT(src, TRAIT_NITEVISION))
+		lighting_alpha = min(lighting_alpha, LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE)
+		see_in_dark = max(see_in_dark, 12)
+
 	if(HAS_TRAIT(src, TRAIT_NOCSHADES))
 		lighting_alpha = min(lighting_alpha, LIGHTING_PLANE_ALPHA_NOCSHADES)
 		see_in_dark = max(see_in_dark, 12)
@@ -831,6 +811,13 @@
 	else
 		remove_client_colour(/datum/client_colour/nocshaded)
 		clear_fullscreen("inqvision")
+
+	if(HAS_TRAIT(src, TRAIT_GILDED_SIGHT))
+		lighting_alpha = min(lighting_alpha, LIGHTING_PLANE_ALPHA_NOCSHADES)
+		see_in_dark = max(see_in_dark, 12)
+		add_client_colour(/datum/client_colour/gildsight)
+	else
+		remove_client_colour(/datum/client_colour/gildsight)
 
 	if(HAS_TRAIT(src, TRAIT_THERMAL_VISION))
 		sight |= (SEE_MOBS)
@@ -1063,7 +1050,27 @@
 			cure_blind(UNCONSCIOUS_BLIND)
 			return
 		if(((blood_volume in -INFINITY to BLOOD_VOLUME_SURVIVE) && !HAS_TRAIT(src, TRAIT_BLOODLOSS_IMMUNE)) || IsUnconscious() || IsSleeping() || getOxyLoss() > 75 || (HAS_TRAIT(src, TRAIT_DEATHCOMA)) || (health <= HEALTH_THRESHOLD_FULLCRIT && !HAS_TRAIT(src, TRAIT_NOHARDCRIT)))
-			stat = UNCONSCIOUS
+			if(stat != UNCONSCIOUS) // Transition into hardcrit — announce once
+				var/bled_out = (blood_volume in -INFINITY to BLOOD_VOLUME_SURVIVE) && !HAS_TRAIT(src, TRAIT_BLOODLOSS_IMMUNE)
+				var/suffocating = getOxyLoss() > 75
+				var/poisoned = health <= HEALTH_THRESHOLD_FULLCRIT && getToxLoss() >= getFireLoss() && getToxLoss() >= getBruteLoss()
+				if(bled_out)
+					visible_message(span_danger("<b>[src] collapses, [src.p_their()] skin pale as parchment!</b>"), \
+						span_userdanger("My blood... there is nothing left. I cannot feel my limbs."))
+					balloon_alert_to_viewers("<font color='#bb2b2b'>bled out!</font>")
+				else if(suffocating)
+					visible_message(span_danger("<b>[src] collapses, [src.p_their()] lips turning blue!</b>"), \
+						span_userdanger("I cannot breathe... the world grows dark."))
+					balloon_alert_to_viewers("<font color='#5b7ec4'>suffocating!</font>")
+				else if(poisoned)
+					visible_message(span_danger("<b>[src] collapses, [src.p_their()] body wracked with poison!</b>"), \
+						span_userdanger("The poison is too much... I cannot go on."))
+					balloon_alert_to_viewers("<font color='#2b8a3e'>poisoned!</font>")
+				else if(health <= HEALTH_THRESHOLD_FULLCRIT)
+					visible_message(span_danger("<b>[src] collapses, broken and bloodied!</b>"), \
+						span_userdanger("My bones are shattered... I cannot go on."))
+					balloon_alert_to_viewers("<font color='#bb2b2b'>beaten down!</font>")
+			set_stat(UNCONSCIOUS)
 			if(ishuman(src))
 				var/mob/living/carbon/human/H = src
 				H.dna?.species?.stop_wagging_tail(H)
@@ -1074,9 +1081,9 @@
 				REMOVE_TRAIT(src, TRAIT_SIXTHSENSE, "near-death")
 		else
 			if(health <= crit_threshold && !HAS_TRAIT(src, TRAIT_NOSOFTCRIT))
-				stat = SOFT_CRIT
+				set_stat(SOFT_CRIT)
 			else
-				stat = CONSCIOUS
+				set_stat(CONSCIOUS)
 			cure_blind(UNCONSCIOUS_BLIND)
 			REMOVE_TRAIT(src, TRAIT_SIXTHSENSE, "near-death")
 		update_mobility()
@@ -1093,7 +1100,7 @@
 		throw_alert("handcuffed", /atom/movable/screen/alert/restrained/handcuffed, new_master = src.handcuffed)
 	else
 		clear_alert("handcuffed")
-	update_action_buttons_icon() //some of our action buttons might be unusable when we're handcuffed.
+	update_mob_action_buttons() //some of our action buttons might be unusable when we're handcuffed.
 	update_inv_handcuffed()
 	update_hud_handcuffed()
 	update_mobility()

@@ -4,7 +4,7 @@
 	name = "statue"
 	icon_state = ""
 	w_class = WEIGHT_CLASS_NORMAL
-	experimental_inhand = FALSE
+	experimental_inhand = TRUE
 	smeltresult = null
 	grid_width = 32
 	grid_height = 64
@@ -14,7 +14,6 @@
 	desc = "A statue made of heavy, gleaming gold!"
 	icon_state = "gstatue1"
 	smeltresult = /obj/item/ingot/gold
-	sellprice = 120
 
 /obj/item/roguestatue/gold/Initialize()
 	. = ..()
@@ -36,7 +35,6 @@
 	desc = "A statue made of pure, shimmering silver!"
 	icon_state = "sstatue1"
 	smeltresult = /obj/item/ingot/silver
-	sellprice = 90
 
 /obj/item/roguestatue/silver/Initialize()
 	. = ..()
@@ -47,7 +45,6 @@
 	desc = "An unyielding statue of resilient steel."
 	icon_state = "ststatue1"
 	smeltresult = /obj/item/ingot/steel
-	sellprice = 40
 
 /obj/item/roguestatue/steel/Initialize()
 	. = ..()
@@ -58,7 +55,6 @@
 	desc = "A statue of wrought bronze, forged to venerate an ancient champion."
 	icon_state = "astatue1"
 	smeltresult = /obj/item/ingot/aalloy
-	sellprice = 77
 	color = "#bb9696"
 
 /obj/item/roguestatue/aalloy/Initialize()
@@ -70,7 +66,6 @@
 	desc = "A statue of sculpted bronze, forged in the visage of an ancient hero."
 	icon_state = "bronzestatue1"
 	smeltresult = /obj/item/ingot/bronze
-	sellprice = 30
 
 /obj/item/roguestatue/bronze/Initialize()
 	. = ..()
@@ -81,7 +76,6 @@
 	desc = "A forged statue of cast iron!"
 	icon_state = "istatue1"
 	smeltresult = /obj/item/ingot/iron
-	sellprice = 20
 
 /obj/item/roguestatue/iron/Initialize()
 	. = ..()
@@ -92,7 +86,6 @@
 	desc = "A dark statue of glimmering, resilient blacksteel."
 	icon_state = "bsstatue1"
 	smeltresult = /obj/item/ingot/blacksteel
-	sellprice = 160
 
 /obj/item/roguestatue/blacksteel/Initialize()
 	. = ..()
@@ -101,6 +94,29 @@
 
 /obj/item/var/polished = FALSE
 /obj/item/var/polish_bonus = 0
+/obj/item/var/glazed = FALSE
+/obj/item/var/glaze_bonus_pct = 0
+/// Randomised bonus price for glazing.
+/obj/item/var/glaze_bonus_flat = 0
+
+/obj/item/get_mechanics_examine(mob/user)
+	. = ..()
+	if(glaze_bonus_pct > 0)
+		if(glazed)
+			. += span_info("Glazed in a dyebin - its value is increased by [glaze_bonus_pct]%.")
+		else
+			. += span_info("Can be glazed in a dyebin to increase its value by [glaze_bonus_pct]%.")
+	if(glazed && glaze_bonus_flat > 0)
+		. += span_info("Glazed - its value is increased by [glaze_bonus_flat] mammon.")
+	else if(!glazed && icon && icon_exists(icon, "[icon_state]_glazed"))
+		. += span_info("Can be glazed with a dye brush to increase its value.")
+
+/obj/item/get_real_price()
+	. = ..()
+	if(glazed && glaze_bonus_pct > 0)
+		. = max(1, round(. * (1 + glaze_bonus_pct / 100)))
+	if(glazed && glaze_bonus_flat > 0)
+		. += glaze_bonus_flat
 
 /obj/item/examine(mob/user)
 	. = ..()
@@ -133,7 +149,7 @@
 	var/obj/item/thing = O
 	if(!thing.anvilrepair)
 		return ..()
-	if((HAS_TRAIT(user, TRAIT_SQUIRE_REPAIR) || user.get_skill_level(thing.anvilrepair)) && thing.polished == 0 && obj_integrity <= max_integrity)
+	if((HAS_TRAIT(user, TRAIT_SQUIRE_REPAIR) || HAS_TRAIT(user, TRAIT_SELF_SUSTENANCE) || user.get_skill_level(thing.anvilrepair)) && thing.polished == 0 && obj_integrity <= max_integrity)
 		to_chat(user, span_info("I start applying some compound to \the [thing]..."))
 		if(do_after(user, 50 - user.STASPD*2, target = O))
 			thing.polished = 1
@@ -154,7 +170,7 @@
 	icon_state = "brush_0"
 	w_class = WEIGHT_CLASS_SMALL
 	smeltresult = null
-	dropshrink = 0.8
+	dropshrink = 0.6
 	grid_width = 32
 	grid_height = 64
 	var/roughness = 0 // 0  for a fine brush, 1 for a coarse brush
@@ -183,7 +199,7 @@
 		return ..()
 	var/obj/item/thing = O
 	if(thing.polished == 1 && roughness)
-		if((HAS_TRAIT(user, TRAIT_SQUIRE_REPAIR) || user.get_skill_level(thing.anvilrepair)))
+		if((HAS_TRAIT(user, TRAIT_SQUIRE_REPAIR) || HAS_TRAIT(user, TRAIT_SELF_SUSTENANCE) || user.get_skill_level(thing.anvilrepair)))
 			to_chat(user, span_info("I start roughly scrubbing the compound on \the [thing]..."))
 			playsound(loc,"sound/foley/scrubbing[pick(1,2)].ogg", 100, TRUE)
 			if(do_after(user, 50 - user.STASTR*1.5, target = O))
@@ -192,7 +208,7 @@
 				thing.add_atom_colour("#9e9e9e", FIXED_COLOUR_PRIORITY)
 
 	else if(thing.polished == 2 && !roughness)
-		if((HAS_TRAIT(user, TRAIT_SQUIRE_REPAIR) || user.get_skill_level(thing.anvilrepair)))
+		if((HAS_TRAIT(user, TRAIT_SQUIRE_REPAIR) || HAS_TRAIT(user, TRAIT_SELF_SUSTENANCE) || user.get_skill_level(thing.anvilrepair)))
 			to_chat(user, span_info("I start gently scrubbing the edges of \the [thing]..."))
 			playsound(loc,"sound/foley/scrubbing[pick(1,2)].ogg", 100, TRUE)
 			if(do_after(user, 50 - user.STASTR*1.5, target = O))
@@ -207,6 +223,7 @@
 			polished = 0
 			force -= 2
 			force_wielded -= 3
+			update_force_dynamic()
 			max_integrity -= polish_bonus
 			polish_bonus = 0
 			obj_integrity = min(obj_integrity, max_integrity)
@@ -226,6 +243,7 @@
 		obj_integrity += polish_bonus
 		force += 2
 		force_wielded += 3
+		update_force_dynamic()
 		AddComponent(/datum/component/metal_glint)
 		UnregisterSignal(src, COMSIG_COMPONENT_CLEAN_ACT)
 
@@ -276,3 +294,4 @@
 
 /datum/component/metal_glint/proc/stop_process()
 	STOP_PROCESSING(SSobj, src)
+ 

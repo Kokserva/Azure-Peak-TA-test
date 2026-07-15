@@ -20,7 +20,7 @@
 	aggro_vision_range = 2
 	see_in_dark = 6
 
-	damage_coeff = list(BRUTE = 1, BURN = 0, TOX = 0, CLONE = 0, STAMINA = 0, OXY = 0)
+
 	harm_intent_damage = 5
 	melee_damage_lower = 30
 	melee_damage_upper = 40
@@ -32,7 +32,7 @@
 	emote_taunt = list("howls")
 	speak_emote = list("clatters")
 
-	faction = list("mimic", "hostile")
+	faction = list(FACTION_MIMIC, FACTION_HOSTILE)
 	stop_automated_movement = 1
 	wander = 0
 	stat_attack = UNCONSCIOUS
@@ -50,16 +50,17 @@
 	can_have_ai = FALSE
 	/// The typepath of the chest this mimic is mimicking.
 	var/obj/structure/closet/crate/chest/mimicking_chest = /obj/structure/closet/crate/chest
+	var/spooked = FALSE
 
 /mob/living/simple_animal/hostile/retaliate/rogue/mimic/Initialize(mapload)
 	. = ..()
+	AddComponent(/datum/component/ai_aggro_system)
 	if(mapload)//load objects into chest.
 		for(var/obj/item/I in loc)
 			I.forceMove(src)
 	name = mimicking_chest::name
 	icon = mimicking_chest::icon
 	icon_state = mimicking_chest::icon_state
-	AddComponent(/datum/component/anti_magic, TRUE, TRUE, TRUE, null, null, FALSE)
 
 /mob/living/simple_animal/hostile/retaliate/rogue/mimic/examine(mob/user)
 	if(aggressive)
@@ -96,10 +97,28 @@
 	icon = initial(icon)
 	icon_state = (stat == DEAD) ? icon_dead : icon_living
 
+// SURPRISE MODAFUCKA
+/mob/living/simple_animal/hostile/retaliate/rogue/mimic/proc/spook()
+	if(spooked)
+		return
+	spooked = TRUE
+	var/turf/T = get_turf(src)
+	if(!T)
+		return
+	visible_message(span_warning("[src] suddenly bursts open, revealing gnashing fangs!"))
+	playsound(loc, pick('sound/misc/jumpscare (1).ogg','sound/misc/jumpscare (2).ogg','sound/misc/jumpscare (3).ogg','sound/misc/jumpscare (4).ogg'), 100)
+
+	for(var/mob/living/carbon/C in view(4, src))
+		if(C == src || HAS_TRAIT(C, TRAIT_NOMOOD))
+			continue
+		if(!HAS_TRAIT(C, TRAIT_PSYDONIAN_GRIT) && (!HAS_TRAIT(C, TRAIT_STEELHEARTED) || prob(50)))
+			C.freak_out_mimic(src)
+
 /mob/living/simple_animal/hostile/retaliate/rogue/mimic/Aggro()
 	..()
 	// go mask-off!
 	undisguise()
+	spook()
 	aggressive = TRUE
 
 /mob/living/simple_animal/hostile/retaliate/rogue/mimic/death()

@@ -31,6 +31,9 @@
 		bodypart_overlays(standing)
 	return appearances
 
+/datum/bodypart_feature/proc/get_cache_key()
+	return "[accessory_type]-[accessory_colors]"
+
 /// Sets an accessory type and optionally colors too.
 /datum/bodypart_feature/proc/set_accessory_type(new_accessory_type, colors, owner)
 	accessory_type = new_accessory_type
@@ -63,10 +66,7 @@
 		remove_bodypart_feature(existing_feature)
 	bodypart_features += feature
 	if(owner)
-		if(ishuman(owner))
-			var/mob/living/carbon/human/H = owner
-			H.icon_render_key = null
-		owner.queue_icon_update(PENDING_UPDATE_BODY)
+		owner.update_body()
 	return TRUE
 
 /obj/item/bodypart/proc/remove_bodypart_feature(datum/bodypart_feature/feature)
@@ -74,10 +74,7 @@
 		return
 	bodypart_features -= feature
 	if(owner)
-		if(ishuman(owner))
-			var/mob/living/carbon/human/H = owner
-			H.icon_render_key = null
-		owner.queue_icon_update(PENDING_UPDATE_BODY)
+		owner.update_body()
 	return
 
 /obj/item/bodypart/proc/remove_all_bodypart_features()
@@ -85,10 +82,7 @@
 		return
 	bodypart_features.Cut()
 	if(owner)
-		if(ishuman(owner))
-			var/mob/living/carbon/human/H = owner
-			H.icon_render_key = null
-		owner.queue_icon_update(PENDING_UPDATE_BODY)
+		owner.update_body()
 
 /mob/living/carbon/proc/remove_all_bodypart_features()
 	for(var/obj/item/bodypart/bodypart as anything in bodyparts)

@@ -32,10 +32,16 @@
 /obj/structure/roguewindow/attacked_by(obj/item/I, mob/living/user)
 	..()
 	if(obj_broken || obj_destroyed)
-		var/obj/effect/track/structure/new_track = SStracks.get_track(/obj/effect/track/structure, get_turf(src))
-		message_admins("Window [obj_destroyed ? "destroyed" : "broken"] by [user?.real_name] using [I] [ADMIN_JMP(src)]")
-		log_admin("Window [obj_destroyed ? "destroyed" : "broken"] by [user?.real_name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)]")
-		new_track.handle_creation(user)
+		var/turf/T = get_turf(src)
+		if(!T)
+			return
+		var/obj/effect/track/structure/new_track = SStracks.get_track(/obj/effect/track/structure, T)
+		if(new_track)
+			new_track.handle_creation(user)
+
+		if(user?.ckey)
+			message_admins("Window [obj_destroyed ? "destroyed" : "broken"] by [user.real_name] using [I] [ADMIN_JMP(src)]")
+			log_admin("Window [obj_destroyed ? "destroyed" : "broken"] by [user.real_name] at X:[src.x] Y:[src.y] Z:[src.z] in area: [get_area(src)]")
 
 /obj/structure/roguewindow/update_icon()
 	if(brokenstate)
@@ -198,21 +204,21 @@
 /obj/structure/roguewindow/proc/open_up(mob/user)
 	visible_message(span_info("[user] opens [src]."))
 	playsound(src, 'sound/foley/doors/windowup.ogg', 100, FALSE)
-	climbable = TRUE
-	opacity = FALSE
+	set_climbable(TRUE)
+	set_opacity(FALSE)
 	update_icon()
 
 /obj/structure/roguewindow/proc/force_open()
 	playsound(src, 'sound/foley/doors/windowup.ogg', 100, FALSE)
-	climbable = TRUE
-	opacity = FALSE
+	set_climbable(TRUE)
+	set_opacity(FALSE)
 	update_icon()
 
 /obj/structure/roguewindow/proc/close_up(mob/user)
 	visible_message(span_info("[user] closes [src]."))
 	playsound(src, 'sound/foley/doors/windowdown.ogg', 100, FALSE)
-	climbable = FALSE
-	opacity = TRUE
+	set_climbable(FALSE)
+	set_opacity(TRUE)
 	update_icon()
 
 
@@ -260,9 +266,6 @@
 /obj/structure/roguewindow/attackby(obj/item/W, mob/user, params)
 	return ..()
 
-/obj/structure/roguewindow/attack_paw(mob/living/user)
-	attack_hand(user)
-
 /obj/structure/roguewindow/attack_hand(mob/living/user)
 	. = ..()
 	if(.)
@@ -284,8 +287,8 @@
 		loud_message("A loud crash of a window getting broken rings out", hearing_distance = 14)
 		new /obj/item/natural/glass_shard (get_turf(src))
 		new /obj/effect/decal/cleanable/debris/glassy(get_turf(src))
-		climbable = TRUE
+		set_climbable(TRUE)
 		brokenstate = TRUE
-		opacity = FALSE
+		set_opacity(FALSE)
 	update_icon()
 	..()
